@@ -41,10 +41,14 @@ jobs:
       run: docker volume create --name=pg-data
 
     - name: Set up environment variables
+      run: cp .env.example .env
+
+    - name: Install dependencies
+      run: docker compose run --rm app -c "mix deps.get"
+
+    - name: Geerate mix secret
       run: |
-            cp .env.example .env
-            docker compose run --rm app -c "mix deps.get"
-            SECRET=$(docker compose run --rm app /bin/bash -c "mix phx.gen.secret")
+            SECRET=$(docker compose run -T --rm app /bin/bash -c "mix phx.gen.secret")
             sed -i "s/SECRET_KEY_BASE=.*/SECRET_KEY_BASE=$SECRET/" .env
 
     - name: Run automated tests
