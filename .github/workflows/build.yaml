@@ -40,10 +40,12 @@ jobs:
     - name: Create Docker volume
       run: docker volume create --name=pg-data
 
+    - name: Fetch mix.deps
+      run: docker compose run --rm app -c "mix deps.get"
+
     - name: Set up environment variables
       run: |
             cp .env.example .env
-            docker compose run --rm app -c "mix deps.get"
             SECRET=$(docker compose run --rm app mix phx.gen.secret)
             sed -i "s/SECRET_KEY_BASE=.*/SECRET_KEY_BASE=$SECRET/" .env
 
