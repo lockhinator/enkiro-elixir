@@ -35,7 +35,7 @@ jobs:
           ${{ runner.os }}-mix-
 
     - name: Set up environment variables
-          run: |
+      run: |
             cp .env.example .env
             SECRET=$(docker compose run --rm app mix phx.gen.secret)
             sed -i "s/SECRET_KEY_BASE=.*/SECRET_KEY_BASE=$SECRET/" .env
