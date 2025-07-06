@@ -1,0 +1,823 @@
+openapi: 3.0.0
+info:
+  title: Enkiro Platform API (Launch Ready)
+  version: 4.0.0
+  description: |
+    The definitive, launch-ready API for the Enkiro platform. This version includes a complete administrative suite for managing all core data entities (Games, Versions, Sources, Creators), ensuring full operational control for Phase 1.
+    **Monetization Behavior:** For endpoints that return tiered data, any field marked with `x-tier` will be omitted from the JSON response if the authenticated user's subscription tier is insufficient.
+tags:
+  - name: External API (Public)
+    description: "Client-facing endpoints for user registration, login, and data retrieval."
+  - name: User Management
+    description: "Endpoints for users to manage their own profiles and settings."
+  - name: Admin & Curation
+    description: "Internal-only endpoints for managing core data and the AI content review process. MUST NOT be publicly accessible."
+  - name: Internal Services (Private)
+    description: "Service-to-service endpoints that should not be publicly accessible."
+
+paths:
+  # --- External API (Public) ---
+  /api/v1/games:
+    get:
+      tags: [External API (Public)]
+      summary: List and search for games
+      description: Provides a paginated list of all games, with support for searching and filtering.
+      parameters:
+        - {name: search, in: query, description: "A search term to filter games by title.", schema: {type: string}}
+        - {name: genre, in: query, description: "Filter games by a specific genre.", schema: {type: string}}
+        - {name: limit, in: query, description: "The number of items to return.", schema: {type: integer, default: 20}}
+        - {name: offset, in: query, description: "The number of items to skip for pagination.", schema: {type: integer, default: 0}}
+      responses:
+        '200':
+          description: A paginated list of games.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedGameSummaryResponse'
+        '400':
+          description: Bad request (e.g., invalid parameter).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/games/{id}:
+    get:
+      tags: [External API (Public)]
+      summary: Get comprehensive data for a single game
+      description: Returns a complete data set for a single game, structured by game versions.
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: string, example: "escape-from-tarkov"}}
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: A single game with comprehensive, versioned data.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GameProfile'
+        '404':
+          description: Game not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/users/register:
+    post:
+      tags: [External API (Public)]
+      summary: Register a new user
+      description: Creates a new user account with a unique username and email.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRegistrationRequest'
+      responses:
+        '201':
+          description: User created.
+        '422':
+          description: Unprocessable Entity (e.g., email or username already exists).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/users/login:
+    post:
+      tags: [External API (Public)]
+      summary: Log in a user
+      description: Authenticates a user and returns a JWT.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserLoginRequest'
+      responses:
+        '200':
+          description: Successful login.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  jwt:
+                    type: string
+        '401':
+          description: Unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # --- User Management ---
+  /api/v1/user/me:
+    get:
+      tags: [User Management]
+      summary: Get current user profile
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: The user's profile information.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+        '401':
+          description: Unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    put:
+      tags: [User Management]
+      summary: Update current user profile
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                marketing_opt_in:
+                  type: boolean
+      responses:
+        '200':
+          description: Profile updated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+        '401':
+          description: Unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/user/change-password:
+    post:
+      tags: [User Management]
+      summary: Change current user's password
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                current_password:
+                  type: string
+                  format: password
+                new_password:
+                  type: string
+                  format: password
+      responses:
+        '204':
+          description: Password changed successfully.
+        '401':
+          description: Unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/user/followed-games:
+    post:
+      tags: [User Management]
+      summary: Set followed games for a user
+      description: "Saves a user's list of followed games. This will REPLACE the user's current list."
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                game_ids:
+                  type: array
+                  items:
+                    type: string
+                    format: uuid
+                  example: ["uuid-for-tarkov", "uuid-for-grayzone"]
+      responses:
+        '204':
+          description: Successfully updated followed games.
+        '401':
+          description: Unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/user/daily-briefing:
+    get:
+      tags: [User Management]
+      summary: Get the user's personalized daily briefing
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: A curated list of recent, relevant content for the user.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DailyBriefing'
+        '401':
+          description: Unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # --- Admin & Curation (Internal) ---
+  /api/v1/admin/games:
+    post:
+      tags: [Admin & Curation]
+      x-internal: true
+      summary: (Admin) Add a new game
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GameCreateUpdate'
+      responses:
+        '201':
+          description: Game created successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GameProfile'
+  /api/v1/admin/games/{id}:
+    put:
+      tags: [Admin & Curation]
+      x-internal: true
+      summary: (Admin) Update a game's details
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: string}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GameCreateUpdate'
+      responses:
+        '200':
+          description: Game updated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GameProfile'
+  /api/v1/admin/games/{id}/versions:
+    post:
+      tags: [Admin & Curation]
+      x-internal: true
+      summary: (Admin) Add a new version to a game
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: string}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VersionCreateUpdate'
+      responses:
+        '201':
+          description: Version created successfully.
+  /api/v1/admin/versions/{version_id}:
+    put:
+      tags: [Admin & Curation]
+      x-internal: true
+      summary: (Admin) Update a game version's details
+      parameters:
+        - {name: version_id, in: path, required: true, schema: {type: string}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VersionCreateUpdate'
+      responses:
+        '200':
+          description: Version updated successfully.
+  /api/v1/admin/sources:
+    get:
+      tags: [Admin & Curation]
+      x-internal: true
+      summary: (Admin) List and search sources
+      responses:
+        '200':
+          description: A paginated list of sources.
+  /api/v1/admin/sources/{source_id}:
+    put:
+      tags: [Admin & Curation]
+      x-internal: true
+      summary: (Admin) Update a source's metadata
+      parameters:
+        - {name: source_id, in: path, required: true, schema: {type: string}}
+      responses:
+        '200':
+          description: Source updated successfully.
+    delete:
+      tags: [Admin & Curation]
+      x-internal: true
+      summary: (Admin) Delete a source
+      parameters:
+        - {name: source_id, in: path, required: true, schema: {type: string}}
+      responses:
+        '204':
+          description: Source deleted successfully.
+  /api/v1/admin/creators:
+    get:
+      tags: [Admin & Curation]
+      x-internal: true
+      summary: (Admin) List all tracked creators
+      responses:
+        '200':
+          description: A list of creators.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Creator'
+    post:
+      tags: [Admin & Curation]
+      x-internal: true
+      summary: (Admin) Add a new creator to track
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Creator'
+      responses:
+        '201':
+          description: Creator added successfully.
+  /api/v1/admin/analyses/pending:
+    get:
+      tags: [Admin & Curation]
+      x-internal: true
+      summary: (Admin) Get AI analyses pending review
+      responses:
+        '200':
+          description: A paginated list of AI analyses awaiting review.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPendingAnalysisResponse'
+  /api/v1/admin/analyses/{id}/approve:
+    post:
+      tags: [Admin & Curation]
+      x-internal: true
+      summary: (Admin) Approve an AI analysis
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: string}}
+      responses:
+        '204':
+          description: Analysis approved and published.
+  /api/v1/admin/analyses/{id}/reject:
+    post:
+      tags: [Admin & Curation]
+      x-internal: true
+      summary: (Admin) Reject an AI analysis
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: string}}
+      responses:
+        '204':
+          description: Analysis rejected and removed from queue.
+
+  # --- Internal Services (Private) ---
+  /api/v1/analyze_content:
+    post:
+      tags: [Internal Services (Private)]
+      x-internal: true
+      summary: Perform Full AI Analysis on Content (Internal)
+      description: Receives a body of text and its metadata, returning a full, structured analysis.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AnalyzeContentRequest'
+      responses:
+        '200':
+          description: A successful, structured analysis of the content.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AiAnalysisResult'
+  /api/v1/ingest/community-thread:
+    post:
+      tags: [Internal Services (Private)]
+      x-internal: true
+      summary: Ingest a community thread for analysis (Internal)
+      description: Used by an internal service to push new community threads into the ingestion pipeline.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AnalyzeContentRequest'
+      responses:
+        '202':
+          description: Thread accepted for processing.
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    # --- Base Schemas ---
+    ErrorResponse:
+      type: object
+      properties:
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              code:
+                type: string
+                example: "validation_error"
+              detail:
+                type: string
+                example: "Username is already taken."
+              field:
+                type: string
+                example: "username"
+    Source:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum: [article, community_thread]
+        title:
+          type: string
+        source_name:
+          type: string
+          enum: [IGN, GameSpot, PC Gamer, GamersNexus, Rock Paper Shotgun, Polygon, Eurogamer, Reddit, Steam News Hub, Official Blog]
+        original_url:
+          type: string
+          format: url
+        published_at:
+          type: string
+          format: date-time
+    Creator:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        creator_name:
+          type: string
+        platform:
+          type: string
+          enum: [YouTube, Twitch]
+        channel_url:
+          type: string
+          format: url
+    CreatorContent:
+      type: object
+      properties:
+        creator_name:
+          type: string
+        video_title:
+          type: string
+        video_url:
+          type: string
+          format: url
+        platform:
+          type: string
+          enum: [YouTube, Twitch]
+
+    # --- User & Auth Schemas ---
+    UserRegistrationRequest:
+      type: object
+      required: [email, password, username]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+        username:
+          type: string
+        marketing_opt_in:
+          type: boolean
+    UserLoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+    UserProfile:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        username:
+          type: string
+        email:
+          type: string
+          format: email
+        subscription_tier:
+          type: string
+          enum: [Free, Analyst, Veteran]
+        marketing_opt_in:
+          type: boolean
+    DailyBriefing:
+      type: object
+      description: "A personalized feed of recent and relevant content."
+      properties:
+        new_analyses:
+          type: array
+          items:
+            type: object
+            properties:
+              game:
+                $ref: '#/components/schemas/GameSummary'
+              source:
+                $ref: '#/components/schemas/Source'
+              analysis:
+                $ref: '#/components/schemas/VersionAnalysis'
+        new_creator_content:
+          type: array
+          items:
+            $ref: '#/components/schemas/CreatorContent'
+
+    # --- Game & Analysis Schemas ---
+    GameSummary:
+      type: object
+      description: "A lightweight summary of a game for list views."
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        slug:
+          type: string
+        cover_art_url:
+          type: string
+          format: url
+        developer:
+          type: string
+        genre:
+          type: string
+    GameProfile:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        slug:
+          type: string
+        developer:
+          type: string
+        publisher:
+          type: string
+        cover_art_url:
+          type: string
+          format: url
+        genre:
+          type: string
+        platforms:
+          type: array
+          items:
+            type: string
+        status:
+          type: string
+        official_links:
+          type: object
+          properties:
+            website:
+              type: string
+              format: url
+            wiki:
+              type: string
+              format: url
+        is_followed_by_user:
+          type: boolean
+        creator_watch:
+          type: array
+          items:
+            $ref: '#/components/schemas/CreatorContent'
+        versions:
+          type: array
+          items:
+            $ref: '#/components/schemas/GameVersion'
+        sources:
+          type: array
+          items:
+            $ref: '#/components/schemas/Source'
+    GameVersion:
+      type: object
+      properties:
+        version_name:
+          type: string
+        release_date:
+          type: string
+          format: date
+        analysis:
+          $ref: '#/components/schemas/VersionAnalysis'
+    VersionAnalysis:
+      type: object
+      properties:
+        ai_overview:
+          $ref: '#/components/schemas/AiDataItem'
+        sentiment:
+          x-tier: "Analyst"
+          type: object
+          properties:
+            positive_percent:
+              type: integer
+            neutral_percent:
+              type: integer
+            negative_percent:
+              type: integer
+        pros:
+          x-tier: "Analyst"
+          type: array
+          items:
+            $ref: '#/components/schemas/AiDataItem'
+        cons:
+          x-tier: "Analyst"
+          type: array
+          items:
+            $ref: '#/components/schemas/AiDataItem'
+        key_topics:
+          x-tier: "Veteran"
+          type: array
+          items:
+            $ref: '#/components/schemas/AiDataItem'
+    AiDataItem:
+      type: object
+      properties:
+        statement:
+          type: string
+        source_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+
+    # --- Pagination Schemas ---
+    PaginatedGameSummaryResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/GameSummary'
+        total:
+          type: integer
+        limit:
+          type: integer
+        offset:
+          type: integer
+    PaginatedPendingAnalysisResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/PendingAnalysisSummary'
+        total:
+          type: integer
+        limit:
+          type: integer
+        offset:
+          type: integer
+
+    # --- Internal & Admin Schemas ---
+    GameCreateUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+        slug:
+          type: string
+        developer:
+          type: string
+        publisher:
+          type: string
+        cover_art_url:
+          type: string
+          format: url
+        genre:
+          type: string
+        platforms:
+          type: array
+          items:
+            type: string
+        status:
+          type: string
+        official_links:
+          type: object
+          properties:
+            website:
+              type: string
+              format: url
+            wiki:
+              type: string
+              format: url
+    VersionCreateUpdate:
+      type: object
+      description: Schema for creating or updating a game version.
+      properties:
+        version_name:
+          type: string
+          example: "0.15.0"
+        release_date:
+          type: string
+          format: date
+          example: "2025-08-15"
+    AnalyzeContentRequest:
+      type: object
+      required: [source_text, source_url, source_name]
+      properties:
+        source_text:
+          type: string
+        source_url:
+          type: string
+          format: url
+        source_name:
+          type: string
+          enum: [IGN, GameSpot, PC Gamer, GamersNexus, Rock Paper Shotgun, Polygon, Eurogamer, Reddit, Steam News Hub, Official Blog]
+        published_at:
+          type: string
+          format: date-time
+    AiAnalysisResult:
+      type: object
+      properties:
+        ai_overview:
+          $ref: '#/components/schemas/AiAnalysisResultItem'
+        sentiment:
+          type: object
+          properties:
+            positive_percent:
+              type: integer
+            neutral_percent:
+              type: integer
+            negative_percent:
+              type: integer
+        pros:
+          type: array
+          items:
+            $ref: '#/components/schemas/AiAnalysisResultItem'
+        cons:
+          type: array
+          items:
+            $ref: '#/components/schemas/AiAnalysisResultItem'
+        key_topics:
+          type: array
+          items:
+            $ref: '#/components/schemas/AiAnalysisResultItem'
+    AiAnalysisResultItem:
+      type: object
+      properties:
+        statement:
+          type: string
+        source_snippet:
+          type: string
+    PendingAnalysisSummary:
+      type: object
+      description: "A summary of an AI analysis awaiting admin review."
+      properties:
+        id:
+          type: string
+          format: uuid
+        source_title:
+          type: string
+        source_name:
+          type: string
+        source_url:
+          type: string
+          format: url
+        created_at:
+          type: string
+          format: date-time
