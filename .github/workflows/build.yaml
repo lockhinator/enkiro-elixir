@@ -37,6 +37,9 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-mix-
 
+    - name: Create Docker volume
+      run: docker volume create --name=pg-data
+
     - name: Set up environment variables
       run: |
             cp .env.example .env
@@ -44,6 +47,4 @@ jobs:
             sed -i "s/SECRET_KEY_BASE=.*/SECRET_KEY_BASE=$SECRET/" .env
 
     - name: Run automated tests
-      run: |
-            docker volume create --name=pg-data
-            docker compose run --rm app ash -c "mix test"
+      run: docker compose run --rm app -c "mix test"
