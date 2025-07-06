@@ -37,5 +37,11 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-mix-
 
+    - name: Set up environment variables
+          run: |
+            cp .env.example .env
+            SECRET=$(docker compose run --rm app mix phx.gen.secret)
+            sed -i "s/SECRET_KEY_BASE=.*/SECRET_KEY_BASE=$SECRET/" .env
+
     - name: Run automated tests
       run: docker compose run --rm app -c "mix test"
