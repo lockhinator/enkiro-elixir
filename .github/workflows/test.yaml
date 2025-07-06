@@ -25,28 +25,26 @@ jobs:
       - name: Set up environment file
         run: cp .env.example .env
 
-      # 3. Build the Docker image using the 'development' stage
-      # This single step leverages the Dockerfile's layer caching.
-      # The 'deps' layer will be reused if mix.lock hasn't changed, making this step very fast.
-      # The GitHub Actions cache for deps/_build is no longer needed.
+      # 3. ADD THIS STEP to create the external volume before it's needed
+      - name: Create Docker volume
+        run: docker volume create --name=pg-data
+
+      # 4. Build the Docker image using the 'development' stage
       - name: Build the Docker image
         run: docker compose build app
 
-      # 4. Generate a secret key if needed for tests
-      # This runs inside the container we just built
+      # 5. Generate a secret key if needed for tests
       - name: Generate Phoenix secret key
         run: |
           SECRET=$(docker compose run --rm -T app mix phx.gen.secret)
           sed -i "s/SECRET_KEY_BASE=.*/SECRET_KEY_BASE=$SECRET/" .env
 
-      # 5. Run database setup and migrations in the test environment
-      # It's good practice to run this before tests
+      # 6. Run database setup and migrations in the test environment
       - name: Setup test database
         run: |
           docker compose run --rm -e MIX_ENV=test app mix ecto.create
           docker compose run --rm -e MIX_ENV=test app mix ecto.migrate
 
-      # 6. Run the automated tests inside the container
-      # The MIX_ENV=test flag ensures it uses the test configuration and database.
+      # 7. Run the automated tests inside the container
       - name: Run automated tests
         run: docker compose run --rm -e MIX_ENV=test app mix test
