@@ -1,0 +1,41 @@
+# This is a GitHub Actions workflow file that defines a CI/CD pipeline for an Elixir application.
+# It builds the application, runs tests, and can be extended to include deployment steps.
+# The workflow is triggered on pushes to the main branch and uses Docker to run the application in a container.
+
+# The name of the workflow.
+name: Test, build, push, and deploy
+
+# Controls when the action will run.
+on:
+  # Triggers the workflow on push request on the main branch for changes in the specified paths.
+  push:
+    branches:
+      - main
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel.
+jobs:
+  # This workflow contains a single job called "build".
+  build:
+    # The type of runner that the job will run on.
+    runs-on: ubuntu-latest
+    
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+
+    # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it.
+    - name: Checkout master
+      uses: actions/checkout@main
+
+    # Cache the deps and build directories
+    - name: Cache Elixir dependencies
+      uses: actions/cache@v2
+      with:
+        path: |
+          deps
+          _build
+        key: ${{ runner.os }}-mix-${{ hashFiles('**/mix.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-mix-
+
+    - name: Run automated tests
+      run: docker compose run --rm app -c "MIX_ENV=test mix test"
