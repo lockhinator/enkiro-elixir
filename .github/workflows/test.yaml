@@ -43,7 +43,7 @@ jobs:
     - name: Install dependencies
       run: docker compose run --rm app -c "mix deps.get"
 
-    - name: Geerate mix secret
+    - name: Generate mix secret
       run: |
             SECRET=$(docker compose run -T --rm app /bin/bash -c "mix phx.gen.secret")
             sed -i "s/SECRET_KEY_BASE=.*/SECRET_KEY_BASE=$SECRET/" .env
