@@ -28,7 +28,7 @@ jobs:
 
     # Cache the deps and build directories
     - name: Cache Elixir dependencies
-      uses: actions/cache@v2
+      uses: actions/cache@v4
       with:
         path: |
           deps
@@ -38,4 +38,4 @@ jobs:
           ${{ runner.os }}-mix-
 
     - name: Run automated tests
-      run: docker compose run --rm app -c "MIX_ENV=test mix test"
+      run: docker compose run --rm app -c "mix test"

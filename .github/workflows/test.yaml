@@ -25,7 +25,7 @@ jobs:
 
     # Cache the deps and build directories
     - name: Cache Elixir dependencies
-      uses: actions/cache@v2
+      uses: actions/cache@v4
       with:
         path: |
           deps
