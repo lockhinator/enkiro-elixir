@@ -44,4 +44,6 @@ jobs:
             sed -i "s/SECRET_KEY_BASE=.*/SECRET_KEY_BASE=$SECRET/" .env
 
     - name: Run automated tests
-      run: docker compose run --rm app ash -c "mix test"
+      run: |
+            docker compose run --rm app -c "MIX_ENV=\"test\" mix deps.get"
+            docker compose run --rm app ash -c "mix test"
