@@ -1,6 +1,5 @@
 # This is a GitHub Actions workflow file that defines a CI/CD pipeline for an Elixir application.
-# It builds the application, runs tests, and can be extended to include deployment steps.
-# The workflow is triggered on pushes to the non main branch and uses Docker to run the application in a container.
+# It leverages Docker's multi-stage build cache to efficiently build the application and run tests.
 name: Test
 
 # Controls when the action will run.
@@ -11,42 +10,43 @@ on:
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel.
 jobs:
-  # This workflow contains a single job called "build".
   test:
     # The type of runner that the job will run on.
     runs-on: ubuntu-latest
     
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
+      # 1. Check out the repository code
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it.
-    - name: Checkout master
-      uses: actions/checkout@main
+      # 2. Prepare environment file for Docker Compose
+      # docker-compose will automatically use the .env file
+      - name: Set up environment file
+        run: cp .env.example .env
 
-    # Cache the deps and build directories
-    - name: Cache Elixir dependencies
-      uses: actions/cache@v4
-      with:
-        path: |
-          deps
-          _build
-        key: ${{ runner.os }}-mix-${{ hashFiles('**/mix.lock') }}
-        restore-keys: |
-          ${{ runner.os }}-mix-
+      # 3. Build the Docker image using the 'development' stage
+      # This single step leverages the Dockerfile's layer caching.
+      # The 'deps' layer will be reused if mix.lock hasn't changed, making this step very fast.
+      # The GitHub Actions cache for deps/_build is no longer needed.
+      - name: Build the Docker image
+        run: docker compose build app
 
-    - name: Create Docker volume
-      run: docker volume create --name=pg-data
+      # 4. Generate a secret key if needed for tests
+      # This runs inside the container we just built
+      - name: Generate Phoenix secret key
+        run: |
+          SECRET=$(docker compose run --rm -T app mix phx.gen.secret)
+          sed -i "s/SECRET_KEY_BASE=.*/SECRET_KEY_BASE=$SECRET/" .env
 
-    - name: Set up environment variables
-      run: cp .env.example .env
+      # 5. Run database setup and migrations in the test environment
+      # It's good practice to run this before tests
+      - name: Setup test database
+        run: |
+          docker compose run --rm -e MIX_ENV=test app mix ecto.create
+          docker compose run --rm -e MIX_ENV=test app mix ecto.migrate
 
-    - name: Install dependencies
-      run: docker compose run --rm app -c "mix deps.get"
-
-    - name: Generate mix secret
-      run: |
-            SECRET=$(docker compose run -T --rm app /bin/bash -c "mix phx.gen.secret")
-            sed -i "s/SECRET_KEY_BASE=.*/SECRET_KEY_BASE=$SECRET/" .env
-
-    - name: Run automated tests
-      run: docker compose run --rm app /bin/bash -c "MIX_ENV=test mix test"
+      # 6. Run the automated tests inside the container
+      # The MIX_ENV=test flag ensures it uses the test configuration and database.
+      - name: Run automated tests
+        run: docker compose run --rm -e MIX_ENV=test app mix test
