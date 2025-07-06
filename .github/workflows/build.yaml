@@ -43,5 +43,8 @@ jobs:
             SECRET=$(docker compose run --rm app mix phx.gen.secret)
             sed -i "s/SECRET_KEY_BASE=.*/SECRET_KEY_BASE=$SECRET/" .env
 
+    - name: Create Docker volume
+      run: docker volume create --name=pg-data
+
     - name: Run automated tests
       run: docker compose run --rm app -c "mix test"
