@@ -126,6 +126,14 @@ Several key decisions were made to ensure the pipeline is as fast and efficient 
 
      * This image is ready to be pushed to a container registry (like Docker Hub or GHCR) for deployment.
 
+   * **Image Pushing and Tagging**:
+
+      * The workflow pushes two versions of the image to ensure both ease of use and the ability to perform precise rollbacks:
+
+         * `:latest`: A rolling tag that always points to the most recent successful build from the `main` branch.
+
+         *  **Git SHA Tag**: A unique, immutable tag based on the commit hash (e.g., `:a1b2c3d4`). This allows you to deploy or roll back to a specific version of the code with confidence.
+
 ---
 
 ## 📚 Official Phoenix Resources
