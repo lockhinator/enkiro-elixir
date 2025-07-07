@@ -1,34 +1,38 @@
+# docker-compose.yml (for CI and base definitions)
 services:
-    db:
-        image: postgres:17.5
-        restart: always
-        container_name: database
-        volumes:
-            - pg-data:/var/lib/postgresql/data
-        environment: # Used by the postgres image to setup a default user. For security reason, you should avoid using the postgres user
-            POSTGRES_USER: enkiro_dev_user
-            POSTGRES_PASSWORD: enkiro_dev_pass
-            POSTGRES_DB: enkiro_dev
-    
-    app:
-        container_name: enkiro-app
-        restart: always
-        build:
-            context: .
-            dockerfile: Dockerfile
-            target: development
-        command: iex -S mix phx.server
-        tty: true
-        stdin_open: true
-        volumes:
-            - .:/app
-        env_file:
-            - .env
-        depends_on:
-            - db
-        ports:
-            - 4000:4000
+  db:
+    image: postgres:17.5
+    restart: always
+    container_name: database
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: enkiro_dev_user
+      POSTGRES_PASSWORD: enkiro_dev_pass
+      POSTGRES_DB: enkiro_dev
+
+  # The 'app' service is the base for development and testing.
+  # It targets the 'development' stage which contains all source code and build tools.
+  app:
+    container_name: enkiro-app
+    # The 'build' section is defined here so CI can build the image without overrides.
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development # Targets the stage with dependencies and source code
+    env_file:
+      - .env
+    depends_on:
+      - db
+
+  # The 'final' service is for building and pushing the production image in CI.
+  # It targets the minimal 'final' stage from your Dockerfile.
+  final:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: final # Targets the slim, production-ready stage
 
 volumes:
-    pg-data:
-        external: true # Must use "docker volume create --name=pg-data before
+  pg-data:
+    external: true
