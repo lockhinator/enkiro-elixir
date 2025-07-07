@@ -49,7 +49,7 @@ ENV MIX_ENV="prod"
 
 # Install mix dependencies
 COPY mix.exs mix.lock ./
-RUN mix deps.get --only $MIX_ENV
+RUN mix deps.get
 
 # Copy compile-time config before compiling to ensure config changes
 # trigger a re-compile of dependencies.
@@ -66,6 +66,10 @@ ENV MIX_ENV="dev"
 
 # Copy the entire application source
 COPY . .
+
+# Compile the application for the dev environment.
+# This step links the dependencies and prepares the app for Mix tasks.
+RUN mix compile
 
 # The CMD will use the already compiled dependencies from the `deps` stage.
 # If mix.exs/lock changed, `deps` would be rebuilt, and we'd get the new deps.
