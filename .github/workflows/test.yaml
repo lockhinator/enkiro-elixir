@@ -1,0 +1,55 @@
+# This is a GitHub Actions workflow file that defines a CI/CD pipeline for an Elixir application.
+# It leverages Docker's multi-stage build cache to efficiently build the application and run tests.
+name: Test
+
+# Controls when the action will run.
+on:
+  # Triggers the workflow on push request on any branch that is not main.
+  push:
+    branches: ["**", "!main"]
+
+# Concurrency control: ensures that only the latest commit on a branch is tested.
+# It cancels any previously running workflows for the same branch.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel.
+jobs:
+  test:
+    # The type of runner that the job will run on.
+    runs-on: ubuntu-latest
+    
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # 1. Check out the repository code
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. Prepare environment file for Docker Compose
+      # docker-compose will automatically use the .env file
+      - name: Set up environment file
+        run: cp .env.example .env
+
+      # 3. ADD THIS STEP to create the external volume before it's needed
+      - name: Create Docker volume
+        run: docker volume create --name=pg-data
+
+      # 4. Build the Docker image using the 'development' stage
+      - name: Build the Docker image
+        run: docker compose build app
+
+      # 5. Ensure that the code is formatted and passes credo checks
+      - name: Run Format check and Credo checks
+        run: docker compose run --rm -e MIX_ENV=test app sh -c "mix format --check-formatted && mix credo"
+
+      # 6. Generate a secret key if needed for tests
+      - name: Generate Phoenix secret key
+        run: |
+          SECRET=$(docker compose run --rm -T app mix phx.gen.secret)
+          sed -i "s|SECRET_KEY_BASE=.*|SECRET_KEY_BASE=$SECRET|" .env
+
+      # 7. Setup database and run tests
+      # This runs all test-related commands in a single container to avoid recompilation.
+      - name: Setup database and run tests
+        run: docker compose run --rm -e MIX_ENV=test app sh -c "mix ecto.create && mix ecto.migrate && mix test"

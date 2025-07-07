@@ -1,0 +1,7 @@
+version: 2
+secret:
+  ignore-matches:
+    - name: "Ignore development database password in docker-compose"
+      match: enkiro_dev_pass
+      paths:
+        - docker-compose.yaml

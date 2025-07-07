@@ -1,6 +1,8 @@
 defmodule EnkiroWeb.Router do
   use EnkiroWeb, :router
 
+  import EnkiroWeb.UserAuth
+
   pipeline :browser do
     plug :accepts, ["html"]
     plug :fetch_session
@@ -12,6 +14,7 @@ defmodule EnkiroWeb.Router do
 
   pipeline :api do
     plug :accepts, ["json"]
+    plug :fetch_api_user
   end
 
   scope "/", EnkiroWeb do
@@ -40,5 +43,12 @@ defmodule EnkiroWeb.Router do
       live_dashboard "/dashboard", metrics: EnkiroWeb.Telemetry
       forward "/mailbox", Plug.Swoosh.MailboxPreview
     end
+  end
+
+  ## API routes
+
+  # In lib/enkiro_web/router.ex
+  scope "/api", EnkiroWeb do
+    pipe_through :api
   end
 end

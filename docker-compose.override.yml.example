@@ -1,0 +1,13 @@
+# docker-compose.override.yml (for local development only)
+services:
+  app:
+    # Overrides the 'app' service from the base file
+    command: iex -S mix phx.server
+    ports:
+      - "4000:4000"
+    # This volume mount enables live-reloading in development
+    volumes:
+      - .:/app
+    # These are needed for an interactive shell
+    tty: true
+    stdin_open: true
