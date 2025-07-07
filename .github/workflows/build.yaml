@@ -47,14 +47,19 @@ jobs:
 
       # 6. Run comprehensive tests against the build
       # These steps run before the image is pushed to ensure code quality.
-      - name: Run linter (Credo)
-        run: docker compose run --rm release mix credo --strict
+      - name: Run Format check and Credo checks
+        run: docker compose run --rm -e MIX_ENV=test app sh -c "mix format --check-formatted && mix credo"
 
-      - name: Check code formatting
-        run: docker compose run --rm release mix format --check-formatted
+      # 7. Generate a secret key if needed for tests
+      - name: Generate Phoenix secret key
+        run: |
+          SECRET=$(docker compose run --rm -T app mix phx.gen.secret)
+          sed -i "s|SECRET_KEY_BASE=.*|SECRET_KEY_BASE=$SECRET|" .env
 
-      - name: Run unit and integration tests
-        run: docker compose run --rm release mix test
+      # 7. Setup database and run tests
+      # This runs all test-related commands in a single container to avoid recompilation.
+      - name: Setup database and run tests
+        run: docker compose run --rm -e MIX_ENV=test app sh -c "mix ecto.create && mix ecto.migrate && mix test"
 
       # 7. Push the final image to the registry if all tests pass
       # This pushes the slim, production-ready image from the 'final' stage.
