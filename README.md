@@ -21,11 +21,30 @@ This ensures your local database retains data between container restarts.
 
 ### ▶️ Start the Application
 
-Start the Enkiro app in the background with:
+1. **Set up Local Development Configuration**
 
-```bash
-docker compose up -d
-```
+   For local development, you need to create a docker-compose.override.yml file. This file adds settings like port mapping and volume mounts for live code reloading. A template is provided for you.
+
+   Copy the example file:
+
+   ```bash
+   cp docker-compose.override.yml.example docker-compose.override.yml
+   ```
+2. **Start the Application**
+
+   Start the Enkiro app in the background with:
+
+   ```bash
+   docker compose up -d
+   ```
+3. **Creating Your User**
+
+   To create a user run the following:
+
+   ```bash
+   docker compose run --rm app
+   iex> Enkiro.Accounts.register_user(%{email: "test@test.com", password: "password123password123"})
+   ```
 
 Once running, visit [http://localhost:4000](http://localhost:4000) in your browser to verify it’s working.
 
@@ -59,17 +78,6 @@ To run the automated test suite:
 
 ```bash
 docker compose run --rm app /bin/bash -c "MIX_ENV=test mix test"
-```
-
----
-
-## Creating Your User
-
-To create a user run the following:
-
-```bash
-docker compose run --rm app
-iex> Enkiro.Accounts.register_user(%{email: "test@test.com", password: "password123password123"})
 ```
 
 ---
