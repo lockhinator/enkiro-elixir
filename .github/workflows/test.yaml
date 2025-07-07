@@ -37,7 +37,7 @@ jobs:
       - name: Generate Phoenix secret key
         run: |
           SECRET=$(docker compose run --rm -T app mix phx.gen.secret)
-          sed -i "s/SECRET_KEY_BASE=.*/SECRET_KEY_BASE=$SECRET/" .env
+          sed -i "s|SECRET_KEY_BASE=.*|SECRET_KEY_BASE=$SECRET|" .env
 
       # 6. Run database setup and migrations in the test environment
       - name: Setup test database
