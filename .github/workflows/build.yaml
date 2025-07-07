@@ -73,4 +73,13 @@ jobs:
       # 11. Push the final image to the registry if all tests pass
       # This pushes the slim, production-ready image from the 'final' stage.
       - name: Push image to registry
-        run: docker compose push final
+        env:
+          # Define the image name to avoid repeating it
+          IMAGE_NAME: ghcr.io/lockhinator/enkiro-elixir
+        run: |
+          echo "Pushing a :latest tag"
+          docker compose push final
+
+          echo "Tagging and pushing a git SHA tag"
+          docker tag $IMAGE_NAME:latest $IMAGE_NAME:${{ github.sha }}
+          docker push $IMAGE_NAME:${{ github.sha }}
