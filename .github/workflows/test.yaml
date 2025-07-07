@@ -8,6 +8,12 @@ on:
   push:
     branches: ["**", "!main"]
 
+# Concurrency control: ensures that only the latest commit on a branch is tested.
+# It cancels any previously running workflows for the same branch.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel.
 jobs:
   test:
