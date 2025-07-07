@@ -39,13 +39,17 @@ jobs:
       - name: Build the Docker image
         run: docker compose build app
 
-      # 5. Generate a secret key if needed for tests
+      # 5. Ensure that the code is formatted and passes credo checks
+      - name: Run Format check and Credo checks
+        run: docker compose run --rm -e MIX_ENV=test app sh -c "mix format --check-formatted && mix credo"
+
+      # 6. Generate a secret key if needed for tests
       - name: Generate Phoenix secret key
         run: |
           SECRET=$(docker compose run --rm -T app mix phx.gen.secret)
           sed -i "s|SECRET_KEY_BASE=.*|SECRET_KEY_BASE=$SECRET|" .env
 
-      # 6. Setup database and run tests
+      # 7. Setup database and run tests
       # This runs all test-related commands in a single container to avoid recompilation.
       - name: Setup database and run tests
         run: docker compose run --rm -e MIX_ENV=test app sh -c "mix ecto.create && mix ecto.migrate && mix test"

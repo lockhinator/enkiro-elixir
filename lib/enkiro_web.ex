@@ -39,8 +39,7 @@ defmodule EnkiroWeb do
   def controller do
     quote do
       use Phoenix.Controller,
-        formats: [:html, :json],
-        layouts: [html: EnkiroWeb.Layouts]
+        formats: [:json]
 
       use Gettext, backend: EnkiroWeb.Gettext
 
