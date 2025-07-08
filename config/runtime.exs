@@ -20,6 +20,16 @@ if System.get_env("PHX_SERVER") do
   config :enkiro, EnkiroWeb.Endpoint, server: true
 end
 
+# Configure Guardian secret key from environment
+jwt_secret_key =
+  System.get_env("GUARDIAN_SECRET_KEY") ||
+    raise """
+    environment variable GUARDIAN_SECRET_KEY is missing.
+    You can generate one by running: mix guardian.gen.secret
+    """
+
+config :enkiro, Enkiro.Guardian, secret_key: jwt_secret_key
+
 if config_env() == :prod do
   database_url =
     System.get_env("DATABASE_URL") ||

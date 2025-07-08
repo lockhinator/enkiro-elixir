@@ -101,16 +101,13 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  jwt:
-                    type: string
+                $ref: '#/components/schemas/UserLogin'
         '401':
           description: Unauthorized.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/UserLoginErrorResponse'
 
   # --- User Management ---
   /api/v1/user/me:
@@ -441,6 +438,33 @@ components:
       bearerFormat: JWT
   schemas:
     # --- Base Schemas ---
+    UserLogin:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+            email:
+              type: string
+              format: email
+            token:
+              type: string
+    UserLoginErrorResponse:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            message:
+              type: string
+              example: "Invalid email or password"
+            status:
+              type: integer
+              example: 401
+              description: "The HTTP status code for the error."
     ErrorResponse:
       type: object
       properties:
