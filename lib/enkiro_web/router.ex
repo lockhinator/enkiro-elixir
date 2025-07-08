@@ -1,8 +1,6 @@
 defmodule EnkiroWeb.Router do
   use EnkiroWeb, :router
 
-  import EnkiroWeb.UserAuth
-
   pipeline :browser do
     plug :accepts, ["html"]
     plug :fetch_session
@@ -14,7 +12,20 @@ defmodule EnkiroWeb.Router do
 
   pipeline :api do
     plug :accepts, ["json"]
-    plug :fetch_api_user
+  end
+
+  # This pipeline verifies the JWT and loads the user for protected routes.
+  pipeline :api_protected do
+    plug Guardian.Plug.VerifyHeader,
+      scheme: "Bearer",
+      module: Enkiro.Guardian,
+      error_handler: Enkiro.AuthErrorHandler
+
+    plug Guardian.Plug.EnsureAuthenticated,
+      module: Enkiro.Guardian,
+      error_handler: Enkiro.AuthErrorHandler
+
+    plug Guardian.Plug.LoadResource, allow_blank: false, module: Enkiro.Guardian
   end
 
   scope "/", EnkiroWeb do
@@ -47,8 +58,21 @@ defmodule EnkiroWeb.Router do
 
   ## API routes
 
-  # In lib/enkiro_web/router.ex
+  # --- Public Routes ---
+  # Login remains public. It's how you get a token.
   scope "/api", EnkiroWeb do
     pipe_through :api
+
+    post "/users/login", UserSessionController, :create
+  end
+
+  # --- Protected Routes ---
+  # Any route in this scope will require a valid JWT.
+  scope "/api", EnkiroWeb do
+    pipe_through [:api, :api_protected]
+
+    # Protected routes that require authentication
+    delete "/users/logout", UserSessionController, :delete
+    get "/users/profile", UserProfileController, :show
   end
 end

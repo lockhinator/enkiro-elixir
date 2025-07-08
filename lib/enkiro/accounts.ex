@@ -376,4 +376,22 @@ defmodule Enkiro.Accounts do
       _ -> :error
     end
   end
+
+  @doc """
+  Logs in a user with the given email and password.
+
+  ## Examples
+
+      iex> login_user(email, password)
+      {:ok, user}
+
+      iex> login_user(email, password)
+      {:error, :invalid_credentials}
+  """
+  def login_user(email, password) do
+    case get_user_by_email_and_password(email, password) do
+      nil -> {:error, :invalid_credentials}
+      user -> {:ok, user}
+    end
+  end
 end

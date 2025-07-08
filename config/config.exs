@@ -16,7 +16,7 @@ config :enkiro, EnkiroWeb.Endpoint,
   url: [host: "localhost"],
   adapter: Bandit.PhoenixAdapter,
   render_errors: [
-    formats: [html: EnkiroWeb.ErrorHTML, json: EnkiroWeb.ErrorJSON],
+    formats: [json: EnkiroWeb.ErrorJSON],
     layout: false
   ],
   pubsub_server: Enkiro.PubSub,
@@ -60,6 +60,12 @@ config :logger, :console,
 
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason
+
+# Configure the Guardian.DB
+config :guardian, Guardian.DB,
+  adapter: Guardian.DB.EctoAdapter,
+  repo: Enkiro.Repo,
+  schema_name: "guardian_tokens"
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
