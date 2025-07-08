@@ -61,12 +61,11 @@ config :logger, :console,
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason
 
-# Configure Guardian for our application
-config :enkiro, Enkiro.Guardian,
-  issuer: "enkiro",
-  # The secret_key will be loaded from the environment in runtime.exs
-  secret_key: nil,
-  ttl: {15, :minute}
+# Configure the Guardian.DB
+config :guardian, Guardian.DB,
+  adapter: Guardian.DB.EctoAdapter,
+  repo: Enkiro.Repo,
+  schema_name: "guardian_tokens"
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

@@ -17,7 +17,9 @@ defmodule Enkiro.Application do
       # Start a worker by calling: Enkiro.Worker.start_link(arg)
       # {Enkiro.Worker, arg},
       # Start to serve requests, typically the last entry
-      EnkiroWeb.Endpoint
+      EnkiroWeb.Endpoint,
+      # 1 hour
+      {Guardian.DB.Sweeper, [interval: 60 * 60 * 1000]}
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html

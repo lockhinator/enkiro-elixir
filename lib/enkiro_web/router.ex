@@ -16,13 +16,16 @@ defmodule EnkiroWeb.Router do
 
   # This pipeline verifies the JWT and loads the user for protected routes.
   pipeline :api_protected do
-    plug Guardian.Plug.Pipeline,
+    plug Guardian.Plug.VerifyHeader,
+      scheme: "Bearer",
       module: Enkiro.Guardian,
       error_handler: Enkiro.AuthErrorHandler
 
-    plug Guardian.Plug.VerifyHeader, scheme: "Bearer"
-    plug Guardian.Plug.EnsureAuthenticated
-    plug Guardian.Plug.LoadResource, allow_blank: false
+    plug Guardian.Plug.EnsureAuthenticated,
+      module: Enkiro.Guardian,
+      error_handler: Enkiro.AuthErrorHandler
+
+    plug Guardian.Plug.LoadResource, allow_blank: false, module: Enkiro.Guardian
   end
 
   scope "/", EnkiroWeb do

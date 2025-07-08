@@ -48,6 +48,13 @@ defmodule EnkiroWeb.UserSessionControllerTest do
         |> delete(~p"/api/users/logout")
 
       assert json_response(conn, 200) == %{"status" => 200, "message" => "Logout successful"}
+
+      conn_after_revoked =
+        build_conn()
+        |> put_req_header("authorization", "Bearer #{token}")
+        |> delete(~p"/api/users/logout")
+
+      assert response(conn_after_revoked, 401)
     end
   end
 end
