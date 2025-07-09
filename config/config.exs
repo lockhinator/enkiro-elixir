@@ -9,7 +9,10 @@ import Config
 
 config :enkiro,
   ecto_repos: [Enkiro.Repo],
-  generators: [timestamp_type: :utc_datetime]
+  generators: [
+    binary_id: true,
+    timestamp_type: :utc_datetime
+  ]
 
 # Configures the endpoint
 config :enkiro, EnkiroWeb.Endpoint,
