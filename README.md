@@ -25,11 +25,24 @@ This ensures your local database retains data between container restarts.
 
    For local development, you need to create a docker-compose.override.yml file. This file adds settings like port mapping and volume mounts for live code reloading. A template is provided for you.
 
-   Copy the example file:
+   Copy the example docker compose override file:
 
    ```bash
    cp docker-compose.override.yml.example docker-compose.override.yml
    ```
+
+   Copy the `.env` file:
+
+   ```bash
+   cp .env.example .env
+   ```
+
+   #### Generate Needed Keys
+
+   Generate the token for the `SECRET_KEY_BASE` environment variable using `mix phx.gen.secret`. Add it to the key in your `.env` file.
+
+   Generate the token for the `GUARDIAN_SECRET_KEY` environment variable using `mix guardian.gen.secret`. Add it to the key in your `.env` file.
+
 2. **Start the Application**
 
    Start the Enkiro app in the background with:
