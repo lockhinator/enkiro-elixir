@@ -21,6 +21,11 @@ defmodule Enkiro.Accounts.User do
     field :current_password, :string, virtual: true, redact: true
     field :confirmed_at, :utc_datetime
 
+    field :subscription_tier, Ecto.Enum,
+      values: [:free, :analyst, :veteran],
+      null: false,
+      default: :free
+
     timestamps(type: :utc_datetime)
   end
 
