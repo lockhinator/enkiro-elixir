@@ -10,6 +10,9 @@ config :enkiro, EnkiroWeb.Endpoint, cache_static_manifest: "priv/static/cache_ma
 # Configures Swoosh API Client
 config :swoosh, api_client: Swoosh.ApiClient.Finch, finch_name: Enkiro.Finch
 
+# Do not include development routes in production builds.
+config :enkiro, :dev_routes, false
+
 # Disable Swoosh Local Memory Storage
 config :swoosh, local: false
 
