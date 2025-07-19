@@ -29,7 +29,9 @@ defmodule EnkiroWeb.V1.UserSessionControllerTest do
       user = user_fixture()
 
       conn =
-        post(conn, ~p"/api/v1/users/login", user: %{email: user.email, password: "valid_password"})
+        post(conn, ~p"/api/v1/users/login",
+          user: %{email: user.email, password: "valid_password"}
+        )
 
       assert %{"errors" => %{"message" => "Invalid email or password", "status" => 401}} =
                json_response(conn, 401)
