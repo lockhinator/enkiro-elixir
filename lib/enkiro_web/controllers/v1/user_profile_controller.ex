@@ -1,4 +1,4 @@
-defmodule EnkiroWeb.UserProfileController do
+defmodule EnkiroWeb.V1.UserProfileController do
   use EnkiroWeb, :controller
 
   def show(conn, _params) do

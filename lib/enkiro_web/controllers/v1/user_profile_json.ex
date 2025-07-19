@@ -1,4 +1,4 @@
-defmodule EnkiroWeb.UserProfileJSON do
+defmodule EnkiroWeb.V1.UserProfileJSON do
   def render("show.json", %{user: user}) do
     %{
       data: %{

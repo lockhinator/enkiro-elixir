@@ -60,15 +60,16 @@ defmodule EnkiroWeb.Router do
 
   # --- Public Routes ---
   # Login remains public. It's how you get a token.
-  scope "/api", EnkiroWeb do
+  scope "/api/v1", EnkiroWeb.V1 do
     pipe_through :api
 
     post "/users/login", UserSessionController, :create
+    post "/users/register", UserRegisterController, :create
   end
 
   # --- Protected Routes ---
   # Any route in this scope will require a valid JWT.
-  scope "/api", EnkiroWeb do
+  scope "/api/v1", EnkiroWeb.V1 do
     pipe_through [:api, :api_protected]
 
     # Protected routes that require authentication

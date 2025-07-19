@@ -5,12 +5,14 @@ defmodule Enkiro.AccountsFixtures do
   """
 
   def unique_user_email, do: "user#{System.unique_integer()}@example.com"
+  def unique_gamer_tag, do: "gamer#{System.unique_integer()}"
   def valid_user_password, do: "hello world!"
 
   def valid_user_attributes(attrs \\ %{}) do
     Enum.into(attrs, %{
       email: unique_user_email(),
-      password: valid_user_password()
+      password: valid_user_password(),
+      gamer_tag: unique_gamer_tag()
     })
   end
 

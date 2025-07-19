@@ -1,4 +1,4 @@
-defmodule EnkiroWeb.UserSessionController do
+defmodule EnkiroWeb.V1.UserSessionController do
   use EnkiroWeb, :controller
 
   alias Enkiro.Accounts
@@ -16,14 +16,8 @@ defmodule EnkiroWeb.UserSessionController do
       {:error, _reason} ->
         conn
         |> put_status(:unauthorized)
-        |> json(%{error: %{status: 401, message: "Invalid email or password"}})
+        |> json(%{errors: %{status: 401, message: "Invalid email or password"}})
     end
-  end
-
-  def create(conn, _params) do
-    conn
-    |> put_status(:bad_request)
-    |> json(%{error: %{status: 400, message: "Invalid request"}})
   end
 
   def delete(conn, _params) do
