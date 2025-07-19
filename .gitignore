@@ -37,4 +37,5 @@ npm-debug.log
 
 .env
 /docker-compose.override.yml
+.DS_Store
 

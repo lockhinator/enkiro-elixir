@@ -533,7 +533,7 @@ components:
     # --- User & Auth Schemas ---
     UserRegistrationRequest:
       type: object
-      required: [email, password, username]
+      required: [email, password, gamer_tag]
       properties:
         email:
           type: string
@@ -541,7 +541,7 @@ components:
         password:
           type: string
           format: password
-        username:
+        gamer_tag:
           type: string
         marketing_opt_in:
           type: boolean

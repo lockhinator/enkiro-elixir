@@ -1,4 +1,4 @@
-defmodule EnkiroWeb.UserProfileControllerTest do
+defmodule EnkiroWeb.V1.UserProfileControllerTest do
   use EnkiroWeb.ConnCase
 
   import Enkiro.AccountsFixtures
@@ -13,7 +13,7 @@ defmodule EnkiroWeb.UserProfileControllerTest do
       conn =
         conn
         |> put_req_header("authorization", "Bearer #{token}")
-        |> get(~p"/api/users/profile")
+        |> get(~p"/api/v1/users/profile")
 
       assert %{
                "data" => %{
@@ -28,7 +28,7 @@ defmodule EnkiroWeb.UserProfileControllerTest do
     end
 
     test "returns unauthorized when not authenticated", %{conn: conn} do
-      conn = get(conn, ~p"/api/users/profile")
+      conn = get(conn, ~p"/api/v1/users/profile")
 
       assert json_response(conn, 401) == %{
                "error" => %{"message" => "Unauthorized", "status" => 401}

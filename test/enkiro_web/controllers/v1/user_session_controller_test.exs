@@ -1,4 +1,4 @@
-defmodule EnkiroWeb.UserSessionControllerTest do
+defmodule EnkiroWeb.V1.UserSessionControllerTest do
   use EnkiroWeb.ConnCase
 
   import Enkiro.AccountsFixtures
@@ -10,7 +10,7 @@ defmodule EnkiroWeb.UserSessionControllerTest do
       user = user_fixture()
 
       conn =
-        post(conn, ~p"/api/users/login", user: %{email: user.email, password: "hello world!"})
+        post(conn, ~p"/api/v1/users/login", user: %{email: user.email, password: "hello world!"})
 
       assert %{
                "data" => %{
@@ -29,9 +29,9 @@ defmodule EnkiroWeb.UserSessionControllerTest do
       user = user_fixture()
 
       conn =
-        post(conn, ~p"/api/users/login", user: %{email: user.email, password: "valid_password"})
+        post(conn, ~p"/api/v1/users/login", user: %{email: user.email, password: "valid_password"})
 
-      assert %{"error" => %{"message" => "Invalid email or password", "status" => 401}} =
+      assert %{"errors" => %{"message" => "Invalid email or password", "status" => 401}} =
                json_response(conn, 401)
     end
   end
@@ -45,14 +45,14 @@ defmodule EnkiroWeb.UserSessionControllerTest do
       conn =
         conn
         |> put_req_header("authorization", "Bearer #{token}")
-        |> delete(~p"/api/users/logout")
+        |> delete(~p"/api/v1/users/logout")
 
       assert json_response(conn, 200) == %{"status" => 200, "message" => "Logout successful"}
 
       conn_after_revoked =
         build_conn()
         |> put_req_header("authorization", "Bearer #{token}")
-        |> delete(~p"/api/users/logout")
+        |> delete(~p"/api/v1/users/logout")
 
       assert response(conn_after_revoked, 401)
     end

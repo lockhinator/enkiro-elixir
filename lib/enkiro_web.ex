@@ -45,6 +45,8 @@ defmodule EnkiroWeb do
 
       import Plug.Conn
 
+      action_fallback(EnkiroWeb.FallbackController)
+
       unquote(verified_routes())
     end
   end
