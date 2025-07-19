@@ -6,8 +6,10 @@ defmodule EnkiroWeb.FallbackControllerJSON do
   end
 
   defp format_error({msg, opts}) do
-    Enum.reduce(opts, msg, fn {key, value}, acc ->
-      String.replace(acc, "%{#{key}}", to_string(value))
+    # This is a more robust way to format error messages, as it only
+    # attempts to interpolate keys that are actually present in the message.
+    Regex.replace(~r"%\{(\w+)\}", msg, fn _, key ->
+      opts |> Keyword.get(String.to_existing_atom(key), key) |> to_string()
     end)
   end
 end

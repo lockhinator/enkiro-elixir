@@ -5,5 +5,7 @@ defmodule Enkiro.Repo.Migrations.AddGamerTagUsersTable do
     alter table(:users) do
       add :gamer_tag, :string, null: false
     end
+
+    create unique_index(:users, [:gamer_tag])
   end
 end
