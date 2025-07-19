@@ -58,6 +58,7 @@ defmodule Enkiro.Accounts.User do
     |> cast(attrs, [:email, :password, :gamer_tag])
     |> validate_email(opts)
     |> validate_password(opts)
+    |> maybe_validate_unique_gamer_tag(opts)
   end
 
   defp validate_email(changeset, opts) do
@@ -99,6 +100,16 @@ defmodule Enkiro.Accounts.User do
       changeset
       |> unsafe_validate_unique(:email, Enkiro.Repo)
       |> unique_constraint(:email)
+    else
+      changeset
+    end
+  end
+
+  def maybe_validate_unique_gamer_tag(changeset, opts) do
+    if Keyword.get(opts, :validate_email, true) do
+      changeset
+      |> unsafe_validate_unique(:gamer_tag, Enkiro.Repo)
+      |> unique_constraint(:gamer_tag)
     else
       changeset
     end
