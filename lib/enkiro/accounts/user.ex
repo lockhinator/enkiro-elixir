@@ -61,6 +61,13 @@ defmodule Enkiro.Accounts.User do
     |> maybe_validate_unique_gamer_tag(opts)
   end
 
+  def update_changeset(user, attrs, opts \\ []) do
+    user
+    |> cast(attrs, [:email, :gamer_tag])
+    |> validate_email(opts)
+    |> maybe_validate_unique_gamer_tag(opts)
+  end
+
   defp validate_email(changeset, opts) do
     changeset
     |> validate_required([:email, :gamer_tag])

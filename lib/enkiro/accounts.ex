@@ -110,6 +110,23 @@ defmodule Enkiro.Accounts do
   ## Settings
 
   @doc """
+  Updates the user with the given changeset.
+
+  ## Examples
+
+      iex> update_user(user)
+      {:ok, %User{}}
+
+      iex> update_user(user)
+      {:ok, %Ecto.Changeset{}}
+  """
+  def update_user(%User{} = user, attrs \\ %{}, opts \\ []) do
+    user
+    |> User.update_changeset(attrs, opts)
+    |> Repo.update()
+  end
+
+  @doc """
   Returns an `%Ecto.Changeset{}` for changing the user email.
 
   ## Examples
