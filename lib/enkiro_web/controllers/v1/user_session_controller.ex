@@ -1,6 +1,7 @@
 defmodule EnkiroWeb.V1.UserSessionController do
   use EnkiroWeb, :controller
 
+  alias Enkiro.Accounts.User
   alias Enkiro.Accounts
   alias Enkiro.Guardian, as: EnkiroGuardian
 
@@ -13,7 +14,7 @@ defmodule EnkiroWeb.V1.UserSessionController do
           EnkiroGuardian.encode_and_sign(user, %{}, token_type: :access, ttl: {1, :hour})
 
         {:ok, refresh_token, _claims} =
-          EnkiroGuardian.encode_and_sign(user, %{}, token_type: :refresh, ttl: {7, :minute})
+          EnkiroGuardian.encode_and_sign(user, %{}, token_type: :refresh, ttl: {7, :day})
 
         conn
         |> put_resp_cookie(
@@ -25,7 +26,7 @@ defmodule EnkiroWeb.V1.UserSessionController do
           # Only send over HTTPS in production
           secure: Mix.env() == :prod,
           # Available for the whole site
-          path: "/api/v1/users/refresh",
+          path: "/",
           # Provides good CSRF protection
           same_site: "Lax"
         )
@@ -39,24 +40,23 @@ defmodule EnkiroWeb.V1.UserSessionController do
     end
   end
 
-  def refresh(conn, _params) do
-    # Use a case statement to safely get the header
-    case get_req_header(conn, "authorization") do
-      [new_access_token] ->
-        # This is the success case, the pipeline added the header
-        conn
-        |> put_status(:ok)
-        |> render("refresh.json", %{access_token: new_access_token})
-
-      [] ->
-        # This is the failure case, the pipeline did not add the header
-        # This should theoretically not be hit if the pipeline's error_handler works,
-        # but it makes the controller robust against crashes.
-        conn
-        |> put_status(:unauthorized)
-        |> json(%{error: %{status: 401, message: "Unauthorized"}})
+  def refresh(%Plug.Conn{req_cookies: %{"enkiro_refresh" => refresh_token}} = conn, _params) do
+    with {:ok, %{"sub" => user_id}} <- EnkiroGuardian.decode_and_verify(refresh_token),
+         {:ok, %User{} = _user} <- {:ok, Accounts.get_user(user_id)},
+         {:ok, _old_stuff, {new_token, _new_claims}} <-
+           EnkiroGuardian.exchange(refresh_token, "refresh", "access", ttl: {1, :hour}) do
+      conn
+      |> put_status(:ok)
+      |> put_resp_header("authorization", "Bearer #{new_token}")
+      |> resp(200, "")
+    else
+      # This case handles when the refresh token is invalid or missing
+      {:error, _reason} ->
+        put_status(conn, :unauthorized)
     end
   end
+
+  def refresh(_conn, _params), do: {:error, :unauthorized}
 
   def delete(conn, _params) do
     # Use pattern matching to extract the token and revoke it directly

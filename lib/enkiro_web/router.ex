@@ -15,21 +15,22 @@ defmodule EnkiroWeb.Router do
   end
 
   pipeline :api_refresh do
+    plug Guardian.Plug.Pipeline,
+      module: Enkiro.Guardian,
+      error_handler: Enkiro.AuthErrorHandler,
+      key: :default
+
     plug Guardian.Plug.VerifyHeader,
-      scheme: "Refresh",
+      scheme: :none,
       refresh_from_cookie: [
         key: "enkiro_refresh",
-        exchange: Guardian.Plug.Exchange,
-        claims: %{"typ" => "refresh"}
-      ],
-      module: Enkiro.Guardian,
-      error_handler: Enkiro.AuthErrorHandler
-
-    plug Guardian.Plug.EnsureAuthenticated,
-      module: Enkiro.Guardian,
-      error_handler: Enkiro.AuthErrorHandler
-
-    plug Guardian.Plug.LoadResource, module: Enkiro.Guardian
+        # The "typ" of the token in the cookie.
+        exchange_from: "refresh",
+        # The "typ" of the new token to create.
+        exchange_to: "access",
+        # Set a TTL for the new access token.
+        ttl: {1, :hour}
+      ]
   end
 
   pipeline :api_protected do
@@ -86,7 +87,10 @@ defmodule EnkiroWeb.Router do
 
     # --- Special Refresh Route ---
     # This route uses its own specific pipeline
-    post "/users/refresh", UserSessionController, :refresh, pipe_through: [:api, :api_refresh]
+    scope "/" do
+      pipe_through :api_refresh
+      post "/users/refresh", UserSessionController, :refresh
+    end
 
     # --- Protected Routes ---
     # These routes require the standard :api_protected pipeline

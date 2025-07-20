@@ -48,18 +48,22 @@ defmodule EnkiroWeb.V1.UserSessionControllerTest do
   describe "refresh/2" do
     test "issues a new access token when a valid refresh cookie is provided", %{conn: conn} do
       user = user_fixture()
-      # 1. Create a long-lived "refresh" token
-      {:ok, refresh_token, _claims} = EnkiroGuardian.encode_and_sign(user, %{}, token_type: :refresh)
 
-      # 2. Simulate the browser sending the cookie by setting the 'cookie' header
+      {:ok, refresh_token, _claims} =
+        EnkiroGuardian.encode_and_sign(user, %{}, token_type: :refresh)
+
       conn =
         conn
-        |> put_req_header("cookie", "enkiro_refresh=#{refresh_token}")
+        |> put_req_cookie("enkiro_refresh", refresh_token)
         |> post(~p"/api/v1/users/refresh")
 
-      # 3. Assert that we get a new access token in the response
-      assert %{"access_token" => new_access_token} = json_response(conn, 200)
+      # The rest of your assertions are correct and will now pass.
+      assert conn.status == 200, "Expected status 200 but got #{conn.status}"
+
+      assert [header] = get_resp_header(conn, "authorization")
+      assert "Bearer " <> new_access_token = header
       assert is_binary(new_access_token)
+      assert String.length(new_access_token) > 0
     end
 
     test "returns unauthorized when no refresh cookie is provided", %{conn: conn} do
