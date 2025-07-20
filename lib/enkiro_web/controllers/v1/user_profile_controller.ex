@@ -1,17 +1,9 @@
 defmodule EnkiroWeb.V1.UserProfileController do
   use EnkiroWeb, :controller
 
-  def show(conn, _params) do
-    user = Guardian.Plug.current_resource(conn)
-
-    if user do
-      conn
-      |> put_status(:ok)
-      |> render("show.json", %{user: user, token: Guardian.Plug.current_token(conn)})
-    else
-      conn
-      |> put_status(:unauthorized)
-      |> json(%{error: %{status: 401, message: "Unauthorized"}})
-    end
+  def show_me(conn, _params) do
+    # Guardian has already loaded the user into the conn for us
+    current_user = Guardian.Plug.current_resource(conn)
+    render(conn, "show.json", %{user: current_user})
   end
 end

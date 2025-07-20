@@ -108,6 +108,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserLoginErrorResponse'
+  /api/v1/users/logout:
+    delete:
+      tags: [External API (Public)]
+      summary: Log out a user
+      description: Logs out the currently authenticated user invalidating the JWT
 
   # --- User Management ---
   /api/v1/user/me:

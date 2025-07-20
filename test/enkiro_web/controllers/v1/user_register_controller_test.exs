@@ -36,14 +36,19 @@ defmodule EnkiroWeb.V1.UserRegisterControllerTest do
       assert %{
                "data" => %{
                  "id" => user_id,
-                 "email" => user_email,
-                 "token" => token
+                 "email" => user_email
                }
              } = json_response(conn, 200)
 
       assert user_id == user.id
       assert user_email == user.email
-      assert token != nil and String.length(token) > 0
+
+      assert "enkiro_refresh=" <> _cookie_value =
+               get_resp_header(conn, "set-cookie") |> Enum.at(0)
+
+      assert get_resp_header(conn, "set-cookie") |> Enum.at(0) |> String.contains?("HttpOnly")
+      assert get_resp_header(conn, "set-cookie") |> Enum.at(0) |> String.contains?("path=/")
+      assert get_resp_header(conn, "set-cookie") |> Enum.at(0) |> String.contains?("SameSite=Lax")
     end
 
     test "errors when invalid password supplied", %{conn: conn} do
