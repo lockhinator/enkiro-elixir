@@ -193,6 +193,24 @@ defmodule Enkiro.AccountsTest do
     end
   end
 
+  describe "update_user/3" do
+    test "updates user email and gamer_tag" do
+      user = user_fixture()
+      new_email = unique_user_email()
+      new_gamer_tag = "new_gamer_tag"
+
+      {:ok, updated_user} =
+        Accounts.update_user(user, %{
+          email: new_email,
+          gamer_tag: new_gamer_tag
+        })
+
+      assert updated_user.email == new_email
+      assert updated_user.gamer_tag == new_gamer_tag
+      assert updated_user.id == user.id
+    end
+  end
+
   describe "update_user_email/2" do
     setup do
       user = user_fixture()

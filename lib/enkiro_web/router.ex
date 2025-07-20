@@ -98,6 +98,8 @@ defmodule EnkiroWeb.Router do
       pipe_through :api_protected
 
       get "/users/me", UserProfileController, :show_me
+      put "/users/me", UserProfileController, :update_me
+
       delete "/users/logout", UserSessionController, :delete
       # Add any other protected routes here
     end
