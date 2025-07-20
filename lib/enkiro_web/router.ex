@@ -14,10 +14,29 @@ defmodule EnkiroWeb.Router do
     plug :accepts, ["json"]
   end
 
-  # This pipeline verifies the JWT and loads the user for protected routes.
+  pipeline :api_refresh do
+    plug Guardian.Plug.Pipeline,
+      module: Enkiro.Guardian,
+      error_handler: Enkiro.AuthErrorHandler,
+      key: :default
+
+    plug Guardian.Plug.VerifyHeader,
+      scheme: :none,
+      refresh_from_cookie: [
+        key: "enkiro_refresh",
+        # The "typ" of the token in the cookie.
+        exchange_from: "refresh",
+        # The "typ" of the new token to create.
+        exchange_to: "access",
+        # Set a TTL for the new access token.
+        ttl: {1, :hour}
+      ]
+  end
+
   pipeline :api_protected do
     plug Guardian.Plug.VerifyHeader,
       scheme: "Bearer",
+      claims: %{"typ" => "access"},
       module: Enkiro.Guardian,
       error_handler: Enkiro.AuthErrorHandler
 
@@ -58,22 +77,29 @@ defmodule EnkiroWeb.Router do
 
   ## API routes
 
-  # --- Public Routes ---
-  # Login remains public. It's how you get a token.
   scope "/api/v1", EnkiroWeb.V1 do
+    # All routes in this scope will go through the base :api pipeline
     pipe_through :api
 
+    # --- Public Routes ---
     post "/users/login", UserSessionController, :create
     post "/users/register", UserRegisterController, :create
-  end
 
-  # --- Protected Routes ---
-  # Any route in this scope will require a valid JWT.
-  scope "/api/v1", EnkiroWeb.V1 do
-    pipe_through [:api, :api_protected]
+    # --- Special Refresh Route ---
+    # This route uses its own specific pipeline
+    scope "/" do
+      pipe_through :api_refresh
+      post "/users/refresh", UserSessionController, :refresh
+    end
 
-    # Protected routes that require authentication
-    delete "/users/logout", UserSessionController, :delete
-    get "/users/profile", UserProfileController, :show
+    # --- Protected Routes ---
+    # These routes require the standard :api_protected pipeline
+    scope "/" do
+      pipe_through :api_protected
+
+      get "/users/me", UserProfileController, :show_me
+      delete "/users/logout", UserSessionController, :delete
+      # Add any other protected routes here
+    end
   end
 end

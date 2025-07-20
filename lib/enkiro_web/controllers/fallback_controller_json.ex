@@ -1,4 +1,7 @@
 defmodule EnkiroWeb.FallbackControllerJSON do
+  def render("error.json", %{error: :unauthorized}),
+    do: %{errors: [%{base: ["Unauthorized"]}]}
+
   def render("error.json", %{changeset: changeset}) do
     errors = Ecto.Changeset.traverse_errors(changeset, &format_error/1)
 
