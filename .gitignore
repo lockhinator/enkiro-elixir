@@ -39,3 +39,9 @@ npm-debug.log
 /docker-compose.override.yml
 .DS_Store
 
+# ignore release build artifacts
+/priv/static/images/logo-*.png
+/priv/static/images/logo.svg.gz
+/priv/static/images/favicon-*.png
+/priv/static/robots-*.txt
+
