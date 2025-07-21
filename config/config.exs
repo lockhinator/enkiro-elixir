@@ -70,6 +70,13 @@ config :guardian, Guardian.DB,
   repo: Enkiro.Repo,
   schema_name: "guardian_tokens"
 
+config :paper_trail,
+  repo: Enkiro.Repo,
+  item_type: Ecto.UUID,
+  originator: [name: :user, model: Enkiro.Accounts.User],
+  originator_type: Ecto.UUID,
+  originator_relationship_options: [references: :uuid]
+
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
 import_config "#{config_env()}.exs"

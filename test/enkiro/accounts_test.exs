@@ -314,6 +314,14 @@ defmodule Enkiro.AccountsTest do
 
       assert is_nil(user.password)
       assert Accounts.get_user_by_email_and_password(user.email, "new valid password")
+      version = PaperTrail.get_version(user)
+      assert version.originator_id == user.id
+
+      assert version.item_changes == %{
+               "hashed_password" => user.hashed_password
+             }
+
+      refute Map.has_key?(version.item_changes, :password)
     end
 
     test "deletes all tokens for the given user", %{user: user} do

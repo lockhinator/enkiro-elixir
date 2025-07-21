@@ -82,6 +82,16 @@ defmodule EnkiroWeb.V1.UserProfileControllerTest do
       assert updated_user.email == user.email
       assert updated_user.gamer_tag == new_gamer_tag
       assert updated_user.subscription_tier == user.subscription_tier
+
+      # Ensure we have the version entry for the gamer_tag change change
+      version = PaperTrail.get_version(user)
+      assert version.originator_id == updated_user.id
+
+      assert version.item_changes == %{
+               "gamer_tag" => new_gamer_tag
+             }
+
+      refute Map.has_key?(version.item_changes, :password)
     end
 
     test "returns unauthorized when not authenticated - /me endpoint", %{conn: conn} do
@@ -128,6 +138,16 @@ defmodule EnkiroWeb.V1.UserProfileControllerTest do
       # Verify the password was updated
       updated_user = Accounts.get_user!(user.id)
       refute updated_user.hashed_password == user.hashed_password
+
+      # Ensure we have the version entry for the password change
+      version = PaperTrail.get_version(user)
+      assert version.originator_id == updated_user.id
+
+      assert version.item_changes == %{
+               "hashed_password" => updated_user.hashed_password
+             }
+
+      refute Map.has_key?(version.item_changes, :password)
     end
 
     test "returns error when current password is incorrect - /me endpoint", %{

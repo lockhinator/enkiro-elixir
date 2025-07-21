@@ -123,7 +123,14 @@ defmodule Enkiro.Accounts do
   def update_user(%User{} = user, attrs \\ %{}, opts \\ []) do
     user
     |> User.update_changeset(attrs, opts)
-    |> Repo.update()
+    |> PaperTrail.update(originator: user)
+    |> case do
+      {:ok, %{model: updated_user}} ->
+        {:ok, updated_user}
+
+      {:error, changeset} ->
+        {:error, changeset}
+    end
   end
 
   @doc """
@@ -237,12 +244,14 @@ defmodule Enkiro.Accounts do
       |> User.validate_current_password(password)
 
     Ecto.Multi.new()
-    |> Ecto.Multi.update(:user, changeset)
+    |> Ecto.Multi.run(:papertrail_user, fn _repo, _changes ->
+      PaperTrail.update(changeset, originator: user)
+    end)
     |> Ecto.Multi.delete_all(:tokens, UserToken.by_user_and_contexts_query(user, :all))
     |> Repo.transaction()
     |> case do
-      {:ok, %{user: user}} -> {:ok, user}
-      {:error, :user, changeset, _} -> {:error, changeset}
+      {:ok, %{papertrail_user: %{model: user}}} -> {:ok, user}
+      {:error, :papertrail_user, changeset, _} -> {:error, changeset}
     end
   end
 
