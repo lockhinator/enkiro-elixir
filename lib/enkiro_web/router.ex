@@ -88,6 +88,7 @@ defmodule EnkiroWeb.Router do
     scope "/" do
       pipe_through :api_protected
 
+      put "/users/me/password", UserProfileController, :update_password_me
       get "/users/me", UserProfileController, :show_me
       put "/users/me", UserProfileController, :update_me
 

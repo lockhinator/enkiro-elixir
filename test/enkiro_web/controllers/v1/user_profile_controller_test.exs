@@ -92,4 +92,69 @@ defmodule EnkiroWeb.V1.UserProfileControllerTest do
              }
     end
   end
+
+  describe "update_password_me/2" do
+    setup do
+      user = user_fixture()
+      %{user: user}
+    end
+
+    test "updates the password when authenticated - /me endpoint", %{conn: conn, user: user} do
+      {:ok, token, _claims} = EnkiroGuardian.encode_and_sign(user, token_type: :access)
+
+      new_password = "NewSecurePassword123!"
+
+      conn =
+        conn
+        |> put_req_header("authorization", "Bearer #{token}")
+        |> put(~p"/api/v1/users/me/password", %{
+          "user" => %{"current_password" => "hello world!", "new_password" => new_password}
+        })
+
+      assert %{
+               "data" => %{
+                 "id" => updated_user_id,
+                 "email" => updated_user_email,
+                 "gamer_tag" => updated_gamer_tag,
+                 "subscription_tier" => user_subscription_tier
+               }
+             } = json_response(conn, 200)
+
+      assert updated_user_id == user.id
+      assert updated_user_email == user.email
+      assert updated_gamer_tag == user.gamer_tag
+      assert user_subscription_tier == "#{user.subscription_tier}"
+
+      # Verify the password was updated
+      updated_user = Accounts.get_user!(user.id)
+      refute updated_user.hashed_password == user.hashed_password
+    end
+
+    test "returns error when current password is incorrect - /me endpoint", %{conn: conn, user: user} do
+      {:ok, token, _claims} = EnkiroGuardian.encode_and_sign(user, token_type: :access)
+
+      conn =
+        conn
+        |> put_req_header("authorization", "Bearer #{token}")
+        |> put(~p"/api/v1/users/me/password", %{
+          "user" => %{"current_password" => "wrongpassword", "new_password" => "NewSecurePassword123!"}
+        })
+
+      assert json_response(conn, 422) == %{"errors" => %{"current_password" => ["is not valid"]}}
+    end
+
+    test "returns unauthorized when not authenticated - /me endpoint", %{conn: conn} do
+      conn =
+        put(conn, ~p"/api/v1/users/me/password", %{
+          "user" => %{
+            "current_password" => "wrongpassword",
+            "new_password" => "NewSecurePassword123!"
+          }
+        })
+
+      assert json_response(conn, 401) == %{
+               "error" => %{"message" => "Unauthorized", "status" => 401}
+             }
+    end
+  end
 end
