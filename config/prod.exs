@@ -19,5 +19,16 @@ config :swoosh, local: false
 # Do not print debug messages in production
 config :logger, level: :info
 
+config :enkiro, Enkiro.Guardian,
+  issuer: "enkiro",
+  # The secret_key will be loaded from the environment in runtime.exs
+  secret_key: nil,
+  ttl: {15, :minute},
+  module: Enkiro.Guardian,
+  error_handler: Enkiro.AuthErrorHandler,
+  hooks: Guardian.DB,
+  db_module: Enkiro.Guardian.Token,
+  repo: Enkiro.Repo
+
 # Runtime production configuration, including reading
 # of environment variables, is done on config/runtime.exs.

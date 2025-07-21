@@ -34,17 +34,8 @@ defmodule EnkiroWeb.Router do
   end
 
   pipeline :api_protected do
-    plug Guardian.Plug.VerifyHeader,
-      scheme: "Bearer",
-      claims: %{"typ" => "access"},
-      module: Enkiro.Guardian,
-      error_handler: Enkiro.AuthErrorHandler
-
-    plug Guardian.Plug.EnsureAuthenticated,
-      module: Enkiro.Guardian,
-      error_handler: Enkiro.AuthErrorHandler
-
-    plug Guardian.Plug.LoadResource, allow_blank: false, module: Enkiro.Guardian
+    plug :accepts, ["json"]
+    plug EnkiroWeb.Pipelines.ApiProtected
   end
 
   scope "/", EnkiroWeb do
