@@ -130,14 +130,20 @@ defmodule EnkiroWeb.V1.UserProfileControllerTest do
       refute updated_user.hashed_password == user.hashed_password
     end
 
-    test "returns error when current password is incorrect - /me endpoint", %{conn: conn, user: user} do
+    test "returns error when current password is incorrect - /me endpoint", %{
+      conn: conn,
+      user: user
+    } do
       {:ok, token, _claims} = EnkiroGuardian.encode_and_sign(user, token_type: :access)
 
       conn =
         conn
         |> put_req_header("authorization", "Bearer #{token}")
         |> put(~p"/api/v1/users/me/password", %{
-          "user" => %{"current_password" => "wrongpassword", "new_password" => "NewSecurePassword123!"}
+          "user" => %{
+            "current_password" => "wrongpassword",
+            "new_password" => "NewSecurePassword123!"
+          }
         })
 
       assert json_response(conn, 422) == %{"errors" => %{"current_password" => ["is not valid"]}}
