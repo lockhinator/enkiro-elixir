@@ -434,4 +434,26 @@ defmodule Enkiro.Accounts do
       user -> {:ok, user}
     end
   end
+
+  alias Enkiro.Accounts.Role
+  alias Enkiro.Accounts.UserRole
+
+  def create_role(attrs \\ %{}) do
+    %Role{}
+    |> Role.changeset(attrs)
+    |> Repo.insert()
+  end
+
+  def get_role_by_name!(name), do: Repo.get_by!(Role, name: name)
+
+  def user_has_role?(%User{} = user, required_roles) when is_list(required_roles) do
+    Repo.exists?(
+      from ur in UserRole,
+        join: r in Role,
+        on: ur.role_id == r.id,
+        where: ur.user_id == ^user.id and r.api_name in ^required_roles
+    )
+  end
+
+  def user_has_role?(_, _roles), do: false
 end

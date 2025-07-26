@@ -8,6 +8,10 @@ defmodule EnkiroWeb.FallbackControllerJSON do
     %{errors: errors}
   end
 
+  def render("not_found.json", _assigns) do
+    %{errors: [%{base: ["Resource not found"]}]}
+  end
+
   defp format_error({msg, opts}) do
     # This is a more robust way to format error messages, as it only
     # attempts to interpolate keys that are actually present in the message.
