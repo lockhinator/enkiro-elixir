@@ -444,19 +444,15 @@ defmodule Enkiro.Accounts do
     |> Repo.insert()
   end
 
-  def get_role_by_name!(name) do
-    Repo.get_by!(Role, name: name)
-  end
+  def get_role_by_name!(name), do: Repo.get_by!(Role, name: name)
 
   def user_has_role?(%User{} = user, required_roles) when is_list(required_roles) do
-    query =
+    Repo.exists?(
       from ur in UserRole,
         join: r in Role,
         on: ur.role_id == r.id,
-        where: ur.user_id == ^user.id and r.api_name in ^required_roles,
-        select: count(ur.id)
-
-    Repo.one(query) > 0
+        where: ur.user_id == ^user.id and r.api_name in ^required_roles
+    )
   end
 
   def user_has_role?(_, _roles), do: false

@@ -64,18 +64,11 @@ defmodule Enkiro.GamesTest do
     test "updates game attributes" do
       user = user_fixture()
 
-      {:ok, game} =
-        Games.create_game(%{
+      game =
+        game_fixture(%{
           title: "Old Game",
           genre: "Adventure",
-          release_date: ~D[2023-01-01],
-          status: Enum.random(Enkiro.Games.Game.game_statuses()),
-          ai_overview: "Old AI overview",
-          publisher_overview: "Old Publisher overview",
-          logo_path: "/old/logo.png",
-          cover_art_path: "/old/cover.png",
-          store_url: "http://example.com/store/old-game",
-          steam_appid: 654_321
+          steam_appid: 234_567
         })
 
       assert game.title == "Old Game"
@@ -107,18 +100,9 @@ defmodule Enkiro.GamesTest do
 
   describe "get_game/1" do
     test "retrieves game by ID" do
-      {:ok, game} =
-        Games.create_game(%{
-          title: "Retrieve Game",
-          genre: "Puzzle",
-          release_date: ~D[2023-09-01],
-          status: "released",
-          ai_overview: "Retrieve AI overview",
-          publisher_overview: "Retrieve Publisher overview",
-          logo_path: "/retrieve/logo.png",
-          cover_art_path: "/retrieve/cover.png",
-          store_url: "http://example.com/store/retrieve-game",
-          steam_appid: 345_678
+      game =
+        game_fixture(%{
+          title: "Retrieve Game"
         })
 
       retrieved_game = Games.get_game(game.id)
@@ -129,21 +113,12 @@ defmodule Enkiro.GamesTest do
 
   describe "get_game_by/2" do
     test "retrieves game by attributes" do
-      {:ok, game} =
-        Games.create_game(%{
-          title: "Find Game",
-          genre: "Simulation",
-          release_date: ~D[2023-08-01],
-          status: "released",
-          ai_overview: "Find AI overview",
-          publisher_overview: "Find Publisher overview",
-          logo_path: "/find/logo.png",
-          cover_art_path: "/find/cover.png",
-          store_url: "http://example.com/store/find-game",
-          steam_appid: 456_789
+      game =
+        game_fixture(%{
+          title: "Find Game"
         })
 
-      found_game = Games.get_game_by(%{title: "Find Game"})
+      found_game = Games.get_game_by(%{slug: game.slug})
       assert found_game.id == game.id
       assert found_game.title == "Find Game"
     end
@@ -151,33 +126,8 @@ defmodule Enkiro.GamesTest do
 
   describe "list_games/1" do
     test "lists all games" do
-      {:ok, _game1} =
-        Games.create_game(%{
-          title: "Game 1",
-          genre: "Action",
-          release_date: ~D[2023-10-01],
-          status: "released",
-          ai_overview: "AI 1",
-          publisher_overview: "Publisher 1",
-          logo_path: "/logo1.png",
-          cover_art_path: "/cover1.png",
-          store_url: "http://example.com/store/game1",
-          steam_appid: 123_456
-        })
-
-      {:ok, _game2} =
-        Games.create_game(%{
-          title: "Game 2",
-          genre: "Adventure",
-          release_date: ~D[2023-10-02],
-          status: "released",
-          ai_overview: "AI 2",
-          publisher_overview: "Publisher 2",
-          logo_path: "/logo2.png",
-          cover_art_path: "/cover2.png",
-          store_url: "http://example.com/store/game2",
-          steam_appid: 654_321
-        })
+      _game1 = game_fixture()
+      _game2 = game_fixture()
 
       {games, %Flop.Meta{opts: [for: Enkiro.Games.Game, replace_invalid_params: true]}} =
         Games.list_games()
@@ -186,32 +136,14 @@ defmodule Enkiro.GamesTest do
     end
 
     test "filters games by genre" do
-      {:ok, _game1} =
-        Games.create_game(%{
-          title: "Action Game",
-          genre: "Action",
-          release_date: ~D[2023-10-01],
-          status: "released",
-          ai_overview: "AI 1",
-          publisher_overview: "Publisher 1",
-          logo_path: "/logo1.png",
-          cover_art_path: "/cover1.png",
-          store_url: "http://example.com/store/action-game",
-          steam_appid: 123_456
+      _game1 =
+        game_fixture(%{
+          genre: "Action"
         })
 
-      {:ok, _game2} =
-        Games.create_game(%{
-          title: "Adventure Game",
-          genre: "Adventure",
-          release_date: ~D[2023-10-02],
-          status: "released",
-          ai_overview: "AI 2",
-          publisher_overview: "Publisher 2",
-          logo_path: "/logo2.png",
-          cover_art_path: "/cover2.png",
-          store_url: "http://example.com/store/adventure-game",
-          steam_appid: 654_321
+      _game2 =
+        game_fixture(%{
+          genre: "Adventure"
         })
 
       {
@@ -231,36 +163,18 @@ defmodule Enkiro.GamesTest do
       } = Games.list_games(%{filters: [%{field: :genre, op: :ilike_and, value: "Action"}]})
 
       assert length(games) == 1
-      assert hd(games).title == "Action Game"
+      assert hd(games).genre == "Action"
     end
 
     test "filters games by title" do
-      {:ok, _game1} =
-        Games.create_game(%{
-          title: "Action Game",
-          genre: "Action",
-          release_date: ~D[2023-10-01],
-          status: "released",
-          ai_overview: "AI 1",
-          publisher_overview: "Publisher 1",
-          logo_path: "/logo1.png",
-          cover_art_path: "/cover1.png",
-          store_url: "http://example.com/store/action-game",
-          steam_appid: 123_456
+      _game1 =
+        game_fixture(%{
+          title: "Action Game"
         })
 
-      {:ok, _game2} =
-        Games.create_game(%{
-          title: "Adventure Game",
-          genre: "Adventure",
-          release_date: ~D[2023-10-02],
-          status: "released",
-          ai_overview: "AI 2",
-          publisher_overview: "Publisher 2",
-          logo_path: "/logo2.png",
-          cover_art_path: "/cover2.png",
-          store_url: "http://example.com/store/adventure-game",
-          steam_appid: 654_321
+      _game2 =
+        game_fixture(%{
+          title: "Adventure Game"
         })
 
       {
@@ -289,19 +203,7 @@ defmodule Enkiro.GamesTest do
     test "deletes a game" do
       user = user_fixture()
 
-      {:ok, game} =
-        Games.create_game(%{
-          title: "Delete Game",
-          genre: "Horror",
-          release_date: ~D[2023-07-01],
-          status: "released",
-          ai_overview: "Delete AI overview",
-          publisher_overview: "Delete Publisher overview",
-          logo_path: "/delete/logo.png",
-          cover_art_path: "/delete/cover.png",
-          store_url: "http://example.com/store/delete-game",
-          steam_appid: 987_654
-        })
+      game = game_fixture()
 
       assert {:ok, _deleted_game} = Games.user_delete_game(user, game)
       assert Games.get_game(game.id) == nil

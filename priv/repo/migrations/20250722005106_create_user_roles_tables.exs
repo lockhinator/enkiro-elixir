@@ -21,7 +21,9 @@ defmodule Enkiro.Repo.Migrations.CreateUserRolesTables do
     index(:users_roles, [:user_id])
     index(:users_roles, [:role_id])
     create unique_index(:users_roles, [:user_id, :role_id])
+    create unique_index(:roles, [:name])
     create unique_index(:roles, [:api_name])
+    create unique_index(:roles, [:name, :api_name])
 
     # Insert initial roles directly in the migration
     execute """

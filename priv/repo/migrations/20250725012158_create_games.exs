@@ -21,5 +21,7 @@ defmodule Enkiro.Repo.Migrations.CreateGames do
     end
 
     create index(:games, [:studio_id])
+    create unique_index(:games, [:title])
+    create unique_index(:games, [:slug])
   end
 end
