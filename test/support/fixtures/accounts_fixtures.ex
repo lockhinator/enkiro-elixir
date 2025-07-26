@@ -25,6 +25,21 @@ defmodule Enkiro.AccountsFixtures do
     user
   end
 
+  def role_fixture(attrs \\ %{}) do
+    {:ok, role} =
+      attrs
+      |> Enum.into(%{name: "default_role", api_name: "default_api_role"})
+      |> Enkiro.Accounts.create_role()
+
+    role
+  end
+
+  def user_role_fixture(user, role) do
+    %Enkiro.Accounts.UserRole{}
+    |> Enkiro.Accounts.UserRole.changeset(%{user_id: user.id, role_id: role.id})
+    |> Enkiro.Repo.insert!()
+  end
+
   def extract_user_token(fun) do
     {:ok, captured_email} = fun.(&"[TOKEN]#{&1}[TOKEN]")
     [_, token | _] = String.split(captured_email.text_body, "[TOKEN]")

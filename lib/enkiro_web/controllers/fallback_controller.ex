@@ -14,4 +14,11 @@ defmodule EnkiroWeb.FallbackController do
     |> put_view(EnkiroWeb.FallbackControllerJSON)
     |> render("error.json", changeset: changeset)
   end
+
+  def call(%Plug.Conn{} = conn, {:fetch_resource, nil}) do
+    conn
+    |> put_status(:not_found)
+    |> put_view(EnkiroWeb.FallbackControllerJSON)
+    |> render("not_found.json")
+  end
 end

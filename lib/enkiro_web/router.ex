@@ -76,6 +76,9 @@ defmodule EnkiroWeb.Router do
     post "/users/login", UserSessionController, :create
     post "/users/register", UserRegisterController, :create
 
+    get "/games", GamesController, :index
+    get "/games/:id", GamesController, :show
+
     # --- Special Refresh Route ---
     # This route uses its own specific pipeline
     scope "/" do
@@ -93,7 +96,10 @@ defmodule EnkiroWeb.Router do
       put "/users/me", UserProfileController, :update_me
 
       delete "/users/logout", UserSessionController, :delete
-      # Add any other protected routes here
+
+      post "/games", GamesController, :create
+      put "/games/:id", GamesController, :update
+      delete "/games/:id", GamesController, :delete
     end
   end
 end

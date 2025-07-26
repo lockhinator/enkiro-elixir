@@ -540,4 +540,53 @@ defmodule Enkiro.AccountsTest do
       assert Accounts.fetch_user_by_api_token("invalid") == :error
     end
   end
+
+  describe "create_role/1" do
+    test "creates a role with valid attributes" do
+      attrs = %{name: "admin", api_name: "admin"}
+      assert {:ok, %Accounts.Role{} = role} = Accounts.create_role(attrs)
+      assert role.name == "admin"
+      assert role.api_name == "admin"
+    end
+
+    test "returns error changeset when attributes are invalid" do
+      attrs = %{name: nil, api_name: nil}
+      assert {:error, changeset} = Accounts.create_role(attrs)
+      assert %{name: ["can't be blank"], api_name: ["can't be blank"]} = errors_on(changeset)
+    end
+  end
+
+  describe "get_role_by_name!/1" do
+    test "returns the role with the given name" do
+      role = role_fixture(name: "admin", api_name: "admin")
+      assert Accounts.get_role_by_name!("admin") == role
+    end
+
+    test "raises if the role does not exist" do
+      assert_raise Ecto.NoResultsError, fn ->
+        Accounts.get_role_by_name!("non_existent_role")
+      end
+    end
+  end
+
+  describe "user_has_role?/2" do
+    test "returns true if user has the role" do
+      user = user_fixture()
+      role = role_fixture(name: "admin", api_name: "admin")
+      user_role_fixture(user, role)
+
+      assert Accounts.user_has_role?(user, ["#{:admin}"])
+    end
+
+    test "returns false if user does not have the role" do
+      user = user_fixture()
+      role_fixture(name: "admin", api_name: "admin")
+
+      refute Accounts.user_has_role?(user, ["#{:admin}"])
+    end
+
+    test "returns false if user is nil" do
+      refute Accounts.user_has_role?(nil, [:admin])
+    end
+  end
 end

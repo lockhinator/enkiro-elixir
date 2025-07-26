@@ -63,7 +63,11 @@ defmodule Enkiro.MixProject do
       {:guardian, "~> 2.3"},
       {:guardian_db, "~> 3.0"},
       {:ex_doc, "~> 0.34", only: :dev, runtime: false, warn_if_outdated: true},
-      {:paper_trail, "~> 1.1"}
+      {:paper_trail, "~> 1.1"},
+      {:flop, "~> 0.26.3"},
+      {:flop_phoenix, "~> 0.25.2"},
+      {:slugify, "~> 1.3"},
+      {:faker, "~> 0.18.0", only: :test}
     ]
   end
 
