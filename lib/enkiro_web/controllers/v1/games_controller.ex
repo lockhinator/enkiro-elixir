@@ -27,6 +27,13 @@ defmodule EnkiroWeb.V1.GamesController do
     end
   end
 
+  def show(conn, %{"slug" => slug}) do
+    with {:fetch_resource, %Game{} = game} <-
+           {:fetch_resource, Games.get_game_by(%{slug: slug}, [:studio])} do
+      render(conn, "show.json", game: game)
+    end
+  end
+
   def update(conn, %{"id" => id, "game" => game_params}) do
     user = Guardian.Plug.current_resource(conn)
 

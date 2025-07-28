@@ -77,6 +77,7 @@ defmodule EnkiroWeb.Router do
     post "/users/register", UserRegisterController, :create
 
     get "/games", GamesController, :index
+    get "/games/slug/:slug", GamesController, :show
     get "/games/:id", GamesController, :show
 
     # --- Special Refresh Route ---

@@ -10,6 +10,8 @@ services:
       POSTGRES_USER: enkiro_dev_user
       POSTGRES_PASSWORD: enkiro_dev_pass
       POSTGRES_DB: enkiro_dev
+    ports:
+      - "5433:5432"
 
   # The 'app' service is the base for development and testing.
   # It targets the 'development' stage which contains all source code and build tools.

@@ -8,6 +8,8 @@ defmodule EnkiroWeb.V1.GamesControllerTest do
   alias Enkiro.Accounts
   alias Enkiro.Games
 
+  @upload_folder "test_uploads"
+
   describe "index/2" do
     test "lists all games", %{conn: conn} do
       game = game_fixture()
@@ -37,6 +39,27 @@ defmodule EnkiroWeb.V1.GamesControllerTest do
     test "returns a game by ID", %{conn: conn} do
       game = game_fixture()
       conn = get(conn, ~p"/api/v1/games/#{game.id}")
+
+      assert json_response(conn, 200)["data"] == %{
+               "id" => game.id,
+               "title" => game.title,
+               "slug" => game.slug,
+               "genre" => game.genre,
+               "release_date" => "#{game.release_date}",
+               "ai_overview" => game.ai_overview,
+               "publisher_overview" => game.publisher_overview,
+               "logo_path" => game.logo_path,
+               "cover_art_path" => game.cover_art_path,
+               "store_url" => game.store_url,
+               "steam_appid" => game.steam_appid,
+               "studio_id" => game.studio_id,
+               "status" => "#{game.status}"
+             }
+    end
+
+    test "returns a game by slug", %{conn: conn} do
+      game = game_fixture()
+      conn = get(conn, ~p"/api/v1/games/slug/#{game.slug}")
 
       assert json_response(conn, 200)["data"] == %{
                "id" => game.id,
@@ -88,7 +111,23 @@ defmodule EnkiroWeb.V1.GamesControllerTest do
       user_role_fixture(user, role)
       {:ok, token, _claims} = EnkiroGuardian.encode_and_sign(user, token_type: :access)
 
-      game_attributes = valid_game_attributes()
+      studio_name = valid_studio_name()
+
+      game_attributes =
+        %{}
+        |> valid_game_attributes(false)
+        |> Map.put(:studio, %{
+          name: studio_name
+        })
+
+      # get a base64 encoded image for both the logo and cover art
+      cover_art_data = Base.encode64(File.read!("test/fixtures/tarkov_cover_art.jpg"))
+      logo_data = Base.encode64(File.read!("test/fixtures/tarkov_logo.png"))
+
+      game_attributes =
+        game_attributes
+        |> Map.put(:cover_art_data, "data:image/png;base64,#{cover_art_data}")
+        |> Map.put(:logo_data, "data:image/png;base64,#{logo_data}")
 
       conn =
         conn
@@ -114,6 +153,29 @@ defmodule EnkiroWeb.V1.GamesControllerTest do
       assert release_date == "#{game_attributes.release_date}"
       assert status in Enum.map(Games.Game.game_statuses(), fn status -> "#{status}" end)
 
+      permanent_base_path = "priv/static/#{@upload_folder}"
+
+      # assert the logo was uploaded and is accessible
+      assert game.logo_path =~ "/#{@upload_folder}/"
+      logo_file_path = "#{permanent_base_path}/#{Path.basename(game.logo_path)}"
+
+      assert logo_file_path =~ "/#{@upload_folder}/"
+      assert logo_file_path =~ ".png"
+
+      assert File.exists?(logo_file_path)
+      assert File.read!(logo_file_path) == File.read!("test/fixtures/tarkov_logo.png")
+
+      # assert the cover art was uploaded and is accessible
+      assert game.cover_art_path =~ "/#{@upload_folder}/"
+      cover_art_path = "#{permanent_base_path}/#{Path.basename(game.cover_art_path)}"
+
+      assert cover_art_path =~ "/#{@upload_folder}/"
+      assert cover_art_path =~ ".png"
+
+      assert File.exists?(cover_art_path)
+      assert File.read!(cover_art_path) == File.read!("test/fixtures/tarkov_cover_art.jpg")
+
+      # assert paper trail version was created
       version = PaperTrail.get_version(game)
       assert version.originator_id == user.id
 
@@ -122,6 +184,41 @@ defmodule EnkiroWeb.V1.GamesControllerTest do
              } = version.item_changes
 
       assert version_title == game_attributes.title
+
+      File.rm!(logo_file_path)
+      File.rm!(cover_art_path)
+    end
+
+    test "returns 422 when no studio or studio_id is given", %{conn: conn} do
+      user = user_fixture()
+      role = Accounts.get_role_by_name!("Game Create")
+      user_role_fixture(user, role)
+      {:ok, token, _claims} = EnkiroGuardian.encode_and_sign(user, token_type: :access)
+
+      game_attributes = valid_game_attributes(%{}, false)
+
+      # get a base64 encoded image for both the logo and cover art
+      cover_art_data = Base.encode64(File.read!("test/fixtures/tarkov_cover_art.jpg"))
+      logo_data = Base.encode64(File.read!("test/fixtures/tarkov_logo.png"))
+
+      game_attributes =
+        game_attributes
+        |> Map.put(:cover_art_data, "data:image/png;base64,#{cover_art_data}")
+        |> Map.put(:logo_data, "data:image/png;base64,#{logo_data}")
+
+      conn =
+        conn
+        |> put_req_header("authorization", "Bearer #{token}")
+        |> post(~p"/api/v1/games", game: game_attributes)
+
+      assert %{
+               "errors" => %{
+                 "studio" => [
+                   "must be provided as a `studio_id` or a nested `studio` map with a `name` field"
+                 ],
+                 "studio_id" => ["can't be blank"]
+               }
+             } = json_response(conn, 422)
     end
 
     test "returns 422 when game creation fails", %{conn: conn} do
@@ -144,15 +241,18 @@ defmodule EnkiroWeb.V1.GamesControllerTest do
       assert json_response(conn, 422) == %{
                "errors" => %{
                  "ai_overview" => ["can't be blank"],
-                 "cover_art_path" => ["can't be blank"],
-                 "logo_path" => ["can't be blank"],
                  "publisher_overview" => ["can't be blank"],
-                 "release_date" => ["is invalid"],
+                 "release_date" => ["must be in YYYY-MM-DD format"],
                  "slug" => ["can't be blank"],
                  "status" => ["can't be blank"],
-                 "steam_appid" => ["can't be blank"],
                  "store_url" => ["can't be blank"],
-                 "title" => ["can't be blank"]
+                 "title" => ["can't be blank"],
+                 "cover_art_path" => ["can't be blank"],
+                 "logo_path" => ["can't be blank"],
+                 "studio" => [
+                   "must be provided as a `studio_id` or a nested `studio` map with a `name` field"
+                 ],
+                 "studio_id" => ["can't be blank"]
                }
              }
     end
