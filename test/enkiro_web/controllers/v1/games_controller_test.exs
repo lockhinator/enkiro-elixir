@@ -29,7 +29,8 @@ defmodule EnkiroWeb.V1.GamesControllerTest do
                  "store_url" => game.store_url,
                  "steam_appid" => game.steam_appid,
                  "studio_id" => game.studio_id,
-                 "status" => "#{game.status}"
+                 "status" => "#{game.status}",
+                 "studio" => nil
                }
              ]
     end
@@ -53,12 +54,14 @@ defmodule EnkiroWeb.V1.GamesControllerTest do
                "store_url" => game.store_url,
                "steam_appid" => game.steam_appid,
                "studio_id" => game.studio_id,
-               "status" => "#{game.status}"
+               "status" => "#{game.status}",
+               "studio" => nil
              }
     end
 
     test "returns a game by slug", %{conn: conn} do
-      game = game_fixture()
+      studio = studio_fixture(%{name: "Test Studio"})
+      game = game_fixture(%{studio_id: studio.id})
       conn = get(conn, ~p"/api/v1/games/slug/#{game.slug}")
 
       assert json_response(conn, 200)["data"] == %{
@@ -74,7 +77,8 @@ defmodule EnkiroWeb.V1.GamesControllerTest do
                "store_url" => game.store_url,
                "steam_appid" => game.steam_appid,
                "studio_id" => game.studio_id,
-               "status" => "#{game.status}"
+               "status" => "#{game.status}",
+               "studio" => %{"name" => studio.name}
              }
     end
 
