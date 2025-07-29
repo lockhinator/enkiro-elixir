@@ -28,7 +28,15 @@ defmodule Enkiro.GamesFixtures do
   def valid_cover_art_path, do: "cover_art_#{System.unique_integer()}.png"
   def valid_store_url, do: "https://example.com/store/#{Faker.Internet.slug()}"
 
-  def valid_game_attributes(attrs \\ %{}) do
+  def valid_game_attributes(attrs \\ %{}, create_studio \\ true) do
+    attrs =
+      if Map.has_key?(attrs, :studio_id) || !create_studio do
+        attrs
+      else
+        studio = studio_fixture(Map.get(attrs, :studio, %{}))
+        Map.put(attrs, :studio_id, studio.id)
+      end
+
     Enum.into(attrs, %{
       status: valid_status(),
       title: valid_game_title(),
@@ -39,16 +47,28 @@ defmodule Enkiro.GamesFixtures do
       logo_path: valid_logo_path(),
       cover_art_path: valid_cover_art_path(),
       store_url: valid_store_url(),
-      steam_appid: Enum.random(1000..9999)
+      steam_appid: Enum.random(1000..9999),
+      studio_id: nil
     })
   end
 
-  def game_fixture(attrs \\ %{}) do
+  def game_fixture(attrs \\ %{}, create_studio \\ true) do
     {:ok, game} =
       attrs
-      |> valid_game_attributes()
+      |> valid_game_attributes(create_studio)
       |> Enkiro.Games.create_game()
 
     game
+  end
+
+  def valid_studio_name, do: "Studio #{System.unique_integer()}"
+
+  def studio_fixture(attrs \\ %{}) do
+    {:ok, studio} =
+      attrs
+      |> Enum.into(%{name: valid_studio_name()})
+      |> Enkiro.Games.create_studio()
+
+    studio
   end
 end

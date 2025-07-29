@@ -67,7 +67,8 @@ defmodule Enkiro.MixProject do
       {:flop, "~> 0.26.3"},
       {:flop_phoenix, "~> 0.25.2"},
       {:slugify, "~> 1.3"},
-      {:faker, "~> 0.18.0", only: :test}
+      {:faker, "~> 0.18.0", only: :test},
+      {:temp, "~> 0.4"}
     ]
   end
 

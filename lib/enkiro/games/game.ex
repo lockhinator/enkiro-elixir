@@ -5,6 +5,8 @@ defmodule Enkiro.Games.Game do
   use Ecto.Schema
   import Ecto.Changeset
 
+  alias Enkiro.Games.Studio
+
   @derive {
     Flop.Schema,
     filterable: [:title, :genre, :status, :studio_id], sortable: [:title, :release_date]
@@ -45,7 +47,11 @@ defmodule Enkiro.Games.Game do
     field :cover_art_path, :string
     field :store_url, :string
     field :steam_appid, :integer
-    field :studio_id, :binary_id
+
+    field :cover_art_data, :string, virtual: true
+    field :logo_data, :string, virtual: true
+
+    belongs_to :studio, Studio, foreign_key: :studio_id
 
     timestamps(type: :utc_datetime)
   end
@@ -63,7 +69,14 @@ defmodule Enkiro.Games.Game do
       :logo_path,
       :cover_art_path,
       :store_url,
-      :steam_appid
+      :steam_appid,
+      :studio_id,
+
+      # the virtual fields used to upload images
+      # the data is base64 encoded so we can decode it
+      # and store the image locally
+      :cover_art_data,
+      :logo_data
     ])
     |> set_slug()
     |> validate_required([
@@ -77,12 +90,25 @@ defmodule Enkiro.Games.Game do
       :logo_path,
       :cover_art_path,
       :store_url,
-      :steam_appid
+      :studio_id
     ])
     |> unique_constraint(:slug)
+    |> unique_constraint(:title)
+    |> replace_date_error(:release_date)
+    |> foreign_key_constraint(:studio_id)
   end
 
-  def set_slug(changeset) do
+  def images_changeset(game, attrs) do
+    game
+    |> cast(attrs, [:cover_art_data, :logo_data])
+    |> validate_required([:cover_art_data, :logo_data])
+    |> validate_length(:cover_art_data, min: 1)
+    |> validate_length(:logo_data, min: 1)
+  end
+
+  def game_statuses, do: @game_statuses
+
+  defp set_slug(changeset) do
     case get_field(changeset, :title) do
       nil ->
         changeset
@@ -96,5 +122,16 @@ defmodule Enkiro.Games.Game do
     end
   end
 
-  def game_statuses, do: @game_statuses
+  # replaces the default Ecto date error with a easier to understand custom format error
+  defp replace_date_error(changeset, field) do
+    case get_in(changeset.errors, [field]) do
+      {_, [type: :date, validation: :cast]} ->
+        changeset
+        |> Map.update!(:errors, &List.keydelete(&1, field, 0))
+        |> add_error(field, "must be in YYYY-MM-DD format", validation: :format)
+
+      _ ->
+        changeset
+    end
+  end
 end

@@ -44,4 +44,6 @@ npm-debug.log
 /priv/static/images/logo.svg.gz
 /priv/static/images/favicon-*.png
 /priv/static/robots-*.txt
+/priv/static/uploads/*
+/priv/static/test_uploads/*
 

@@ -1,4 +1,5 @@
 defmodule Enkiro.GamesTest do
+  alias Enkiro.ImageUtils
   use Enkiro.DataCase
 
   import Enkiro.AccountsFixtures
@@ -9,6 +10,13 @@ defmodule Enkiro.GamesTest do
   describe "user_create_game/1" do
     test "creates game with slug" do
       user = user_fixture()
+      studio = studio_fixture()
+
+      cover_art_data =
+        "data:image/jpg;base64,#{Base.encode64(File.read!("test/fixtures/tarkov_cover_art.jpg"))}"
+
+      logo_data =
+        "data:image/png;base64,#{Base.encode64(File.read!("test/fixtures/tarkov_logo.png"))}"
 
       {:ok, %{version: version, model: game}} =
         Games.user_create_game(user, %{
@@ -18,10 +26,11 @@ defmodule Enkiro.GamesTest do
           status: "released",
           ai_overview: "AI overview text",
           publisher_overview: "Publisher overview text",
-          logo_path: "/path/to/logo.png",
-          cover_art_path: "/path/to/cover.png",
+          logo_data: logo_data,
+          cover_art_data: cover_art_data,
           store_url: "http://example.com/store/test-game",
-          steam_appid: 123_456
+          steam_appid: 123_456,
+          studio_id: studio.id
         })
 
       assert game.slug == "test-game"
@@ -31,10 +40,11 @@ defmodule Enkiro.GamesTest do
       assert game.status in Enkiro.Games.Game.game_statuses()
       assert game.ai_overview == "AI overview text"
       assert game.publisher_overview == "Publisher overview text"
-      assert game.logo_path == "/path/to/logo.png"
-      assert game.cover_art_path == "/path/to/cover.png"
+      assert game.logo_path =~ "http://localhost:4002/test_uploads/"
+      assert game.cover_art_path =~ "http://localhost:4002/test_uploads/"
       assert game.store_url == "http://example.com/store/test-game"
       assert game.steam_appid == 123_456
+      assert game.studio_id == studio.id
 
       assert version.originator_id == user.id
 
@@ -43,6 +53,48 @@ defmodule Enkiro.GamesTest do
              } = version.item_changes
 
       assert version_title == "Test Game"
+
+      # cleanup the image files that were created
+      ImageUtils.delete_permanent_image(game.logo_path)
+      ImageUtils.delete_permanent_image(game.cover_art_path)
+    end
+
+    test "cleans up images that are not persisted when validation fails" do
+      user = user_fixture()
+      studio = studio_fixture()
+
+      game = game_fixture(%{studio_id: studio.id})
+
+      cover_art_data =
+        "data:image/jpg;base64,#{Base.encode64(File.read!("test/fixtures/tarkov_cover_art.jpg"))}"
+
+      logo_data =
+        "data:image/png;base64,#{Base.encode64(File.read!("test/fixtures/tarkov_logo.png"))}"
+
+      {:error,
+       %Ecto.Changeset{
+         errors: [
+           title:
+             {"has already been taken",
+              [constraint: :unique, constraint_name: "games_title_index"]}
+         ]
+       }} =
+        Games.user_create_game(user, %{
+          # duplicate title to trigger validation error
+          title: game.title,
+          genre: "Action",
+          release_date: ~D[2023-10-01],
+          status: "released",
+          ai_overview: "AI overview text",
+          publisher_overview: "Publisher overview text",
+          logo_data: logo_data,
+          cover_art_data: cover_art_data,
+          store_url: "http://example.com/store/test-game",
+          steam_appid: 123_456,
+          studio_id: studio.id
+        })
+
+      assert File.ls(ImageUtils.upload_dir()) == {:ok, []}
     end
 
     test "fails to create game with missing required fields" do
@@ -53,10 +105,29 @@ defmodule Enkiro.GamesTest do
       assert changeset.errors[:status] != nil
       assert changeset.errors[:ai_overview] != nil
       assert changeset.errors[:publisher_overview] != nil
-      assert changeset.errors[:logo_path] != nil
-      assert changeset.errors[:cover_art_path] != nil
       assert changeset.errors[:store_url] != nil
-      assert changeset.errors[:steam_appid] != nil
+    end
+
+    test "returns an error when date format is incorrect" do
+      assert {:error, changeset} =
+               Games.create_game(%{
+                 title: "Invalid Date Game",
+                 genre: "Action",
+                 # Invalid date format (correct is 2025-01-01)
+                 release_date: "01-01-2025",
+                 status: "released",
+                 ai_overview: "AI overview text",
+                 publisher_overview: "Publisher overview text",
+                 logo_path: "/path/to/logo.png",
+                 cover_art_path: "/path/to/cover.png",
+                 store_url: "http://example.com/store/invalid-date-game",
+                 steam_appid: 123_456
+               })
+
+      assert changeset.valid? == false
+
+      assert changeset.errors[:release_date] ==
+               {"must be in YYYY-MM-DD format", [validation: :format]}
     end
   end
 
