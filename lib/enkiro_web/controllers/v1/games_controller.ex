@@ -30,6 +30,7 @@ defmodule EnkiroWeb.V1.GamesController do
   def show(conn, %{"slug" => slug}) do
     with {:fetch_resource, %Game{} = game} <-
            {:fetch_resource, Games.get_game_by(%{slug: slug}, [:studio])} do
+      IO.inspect(game, label: "Fetched game by slug")
       render(conn, "show.json", game: game)
     end
   end

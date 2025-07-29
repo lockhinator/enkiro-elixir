@@ -21,14 +21,14 @@ defmodule Enkiro.Games do
   Returns `nil` if the game does not exist.
   """
   def get_game(id, preloads \\ []),
-    do: Repo.get(Game, id, preloads: preloads)
+    do: Repo.get(Game, id) |> Repo.preload(preloads)
 
   @doc """
   Gets a game by attributes, with optional preloads.
   Returns `nil` if no game matches the attributes.
   """
   def get_game_by(attrs, preloads \\ []),
-    do: Repo.get_by(Game, attrs, preloads: preloads)
+    do: Repo.get_by(Game, attrs) |> Repo.preload(preloads)
 
   @doc """
   Creates a new game with the given attributes.
