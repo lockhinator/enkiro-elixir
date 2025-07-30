@@ -96,6 +96,10 @@ defmodule EnkiroWeb.Router do
       get "/users/me", UserProfileController, :show_me
       put "/users/me", UserProfileController, :update_me
 
+      get "/users/me/followed_games", FollowController, :index
+      post "/users/me/followed_games", FollowController, :follow
+      delete "/users/me/followed_games/:game_id", FollowController, :unfollow
+
       delete "/users/logout", UserSessionController, :delete
 
       post "/games", GamesController, :create

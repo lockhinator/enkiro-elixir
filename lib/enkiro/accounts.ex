@@ -456,4 +456,40 @@ defmodule Enkiro.Accounts do
   end
 
   def user_has_role?(_, _roles), do: false
+
+  alias Enkiro.Accounts.UserFollow
+
+  def user_list_followed_games(%User{} = user, params \\ %{}) do
+    query =
+      from(
+        uf in UserFollow,
+        join: g in assoc(uf, :game),
+        join: u in assoc(uf, :user),
+        preload: [game: g, user: u],
+        where: uf.user_id == ^user.id
+      )
+
+    Flop.validate_and_run!(query, params, for: UserFollow, replace_invalid_params: true)
+  end
+
+  def get_user_follow(id), do: Repo.get(UserFollow, id) |> Repo.preload([:user, :game])
+
+  def user_follow_game(%User{} = user, game_id) do
+    %UserFollow{}
+    |> UserFollow.changeset(%{user_id: user.id, game_id: game_id})
+    |> PaperTrail.insert(originator: user)
+  end
+
+  def create_user_follow(attrs \\ %{}) do
+    %UserFollow{}
+    |> UserFollow.changeset(attrs)
+    |> Repo.insert()
+  end
+
+  def user_unfollow_game(%User{} = user, game_id) do
+    case Repo.get_by(UserFollow, %{user_id: user.id, game_id: game_id}) do
+      nil -> {:error, :not_found}
+      user_follow -> PaperTrail.delete(user_follow, originator: user)
+    end
+  end
 end
