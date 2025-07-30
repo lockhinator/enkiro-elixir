@@ -45,4 +45,10 @@ defmodule Enkiro.AccountsFixtures do
     [_, token | _] = String.split(captured_email.text_body, "[TOKEN]")
     token
   end
+
+  def user_follow_fixture(attrs \\ %{}) do
+    {:ok, follow} = Enkiro.Accounts.create_user_follow(attrs)
+
+    follow
+  end
 end
