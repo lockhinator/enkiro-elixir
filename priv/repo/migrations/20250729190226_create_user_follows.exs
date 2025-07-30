@@ -12,6 +12,9 @@ defmodule Enkiro.Repo.Migrations.CreateUserFollows do
 
     create index(:user_follows, [:user_id])
     create index(:user_follows, [:game_id])
-    create unique_index(:user_follows, [:user_id, :game_id], name: :user_follows_user_id_game_id_index)
+
+    create unique_index(:user_follows, [:user_id, :game_id],
+             name: :user_follows_user_id_game_id_index
+           )
   end
 end
