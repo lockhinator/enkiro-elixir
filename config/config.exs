@@ -79,6 +79,15 @@ config :paper_trail,
 
 config :flop, repo: Enkiro.Repo
 
+config :enkiro, Oban,
+  repo: Enkiro.Repo,
+  queues: [
+    ingest: 5
+  ]
+
+config :enkiro, Enkiro.Behaviors.HTTP, provider: Enkiro.Behaviors.HTTP.HTTPoison
+config :enkiro, Enkiro.Behaviors.OAuth2.Client, provider: OAuth2.Client
+
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
 import_config "#{config_env()}.exs"

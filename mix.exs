@@ -68,7 +68,16 @@ defmodule Enkiro.MixProject do
       {:flop_phoenix, "~> 0.25.2"},
       {:slugify, "~> 1.3"},
       {:faker, "~> 0.18.0", only: :test},
-      {:temp, "~> 0.4"}
+      {:temp, "~> 0.4"},
+      {:oauth2, "~> 2.1"},
+      {:timex, "~> 3.7"},
+      {:httpoison, "~> 2.2"},
+      {:oban, "~> 2.19"},
+      {:ex_aws, "~> 2.5"},
+      {:ex_aws_s3, "~> 2.0"},
+      {:hackney, "~> 1.9"},
+      {:sweet_xml, "~> 0.6"},
+      {:mox, "~> 1.2", only: :test}
     ]
   end
 

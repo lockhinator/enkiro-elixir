@@ -19,7 +19,8 @@ defmodule Enkiro.Application do
       # Start to serve requests, typically the last entry
       EnkiroWeb.Endpoint,
       # 1 hour
-      {Guardian.DB.Sweeper, [interval: 60 * 60 * 1000]}
+      {Guardian.DB.Sweeper, [interval: 60 * 60 * 1000]},
+      Enkiro.Reddit.Integration.TokenManager
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html

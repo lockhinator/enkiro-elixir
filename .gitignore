@@ -47,3 +47,7 @@ npm-debug.log
 /priv/static/uploads/*
 /priv/static/test_uploads/*
 
+# ignore minio local storage
+/minio-data
+/minio-data/*
+

@@ -39,4 +39,8 @@ config :phoenix, :plug_init_mode, :runtime
 config :phoenix_live_view,
   enable_expensive_runtime_checks: true
 
+config :enkiro, Enkiro.Behaviours.HTTP, provider: Enkiro.Behaviours.HTTP.Mock
+config :enkiro, Enkiro.Behaviours.OAuth2, provider: Enkiro.Behaviours.OAuth2.Mock
+config :oauth2, adapter: OAuth2.Client.MockHTTP
+
 import_config "guardian.exs"

@@ -20,6 +20,20 @@ if System.get_env("PHX_SERVER") do
   config :enkiro, EnkiroWeb.Endpoint, server: true
 end
 
+config :enkiro, RedditFetcher,
+      client_id: System.get_env("REDDIT_CLIENT_ID"),
+      client_secret: System.get_env("REDDIT_CLIENT_SECRET")
+
+config :ex_aws,
+  access_key_id: System.get_env("AWS_ACCESS_KEY_ID"),
+  secret_access_key: System.get_env("AWS_SECRET_ACCESS_KEY")
+
+config :ex_aws, :s3,
+  scheme: "http://",
+  host: System.get_env("AWS_HOST", "minio"),
+  port: System.get_env("AWS_PORT", "9000"),  # Internal port, not the mapped port
+  force_path_style: true
+
 # Configure Guardian secret key from environment
 jwt_secret_key =
   System.get_env("GUARDIAN_SECRET_KEY") ||
