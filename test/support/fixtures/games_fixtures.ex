@@ -4,6 +4,8 @@ defmodule Enkiro.GamesFixtures do
   entities via the `Enkiro.Games` context.
   """
 
+  alias Enkiro.Games.Game
+
   @example_genres [
     "Action",
     "Adventure",
@@ -70,5 +72,23 @@ defmodule Enkiro.GamesFixtures do
       |> Enkiro.Games.create_studio()
 
     studio
+  end
+
+  @doc """
+  Generate a patch for a given game.
+  """
+  def patch_fixture(%Game{} = game, attrs \\ %{}) do
+    default_attrs = %{
+      game_id: game.id,
+      version_string: "0.#{Enum.random(1..15)}.#{Enum.random(1..10)}",
+      release_date: Date.utc_today(),
+      notes_url: "https://example.com/patch-notes/#{Faker.Internet.slug()}"
+    }
+
+    attrs = Enum.into(attrs, default_attrs)
+
+    {:ok, patch} = Enkiro.Games.create_patch(attrs)
+
+    patch
   end
 end

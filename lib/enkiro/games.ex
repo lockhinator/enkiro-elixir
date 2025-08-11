@@ -6,7 +6,7 @@ defmodule Enkiro.Games do
 
   alias Enkiro.Repo
   alias Enkiro.Accounts.User
-  alias Enkiro.Games.{Game, Studio, Publisher}
+  alias Enkiro.Games.{Game, Studio, Publisher, Patch}
   alias Enkiro.ImageUtils
 
   @doc """
@@ -322,4 +322,10 @@ defmodule Enkiro.Games do
   """
   def list_studios(preloads \\ []),
     do: Repo.all(Studio, preloads: preloads)
+
+  def create_patch(attrs \\ %{}) do
+    %Patch{}
+    |> Patch.changeset(attrs)
+    |> Repo.insert()
+  end
 end

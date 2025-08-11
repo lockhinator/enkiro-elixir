@@ -11,6 +11,8 @@ defmodule Enkiro.Accounts.User do
   use Ecto.Schema
   import Ecto.Changeset
 
+  alias Enkiro.Types
+
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
 
@@ -22,8 +24,15 @@ defmodule Enkiro.Accounts.User do
     field :gamer_tag, :string
     field :confirmed_at, :utc_datetime
 
+    field :all_time_rp, :integer, default: 0
+
+    field :reputation_tier, Ecto.Enum,
+      values: Types.user_reputation_tier_values(),
+      null: false,
+      default: :observer
+
     field :subscription_tier, Ecto.Enum,
-      values: [:free, :analyst, :veteran],
+      values: Types.user_subscription_tier_values(),
       null: false,
       default: :free
 
@@ -66,6 +75,13 @@ defmodule Enkiro.Accounts.User do
     |> cast(attrs, [:email, :gamer_tag])
     |> validate_email(opts)
     |> maybe_validate_unique_gamer_tag(opts)
+  end
+
+  def update_reputation_tier_changeset(user, attrs) do
+    user
+    |> cast(attrs, [:reputation_tier])
+    |> validate_required([:reputation_tier])
+    |> validate_inclusion(:reputation_tier, Types.user_reputation_tier_values())
   end
 
   defp validate_email(changeset, opts) do

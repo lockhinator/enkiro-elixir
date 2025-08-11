@@ -47,3 +47,4 @@ npm-debug.log
 /priv/static/uploads/*
 /priv/static/test_uploads/*
 
+/minio-data
