@@ -25,6 +25,17 @@ defmodule Enkiro.Types do
       :closed_wont_fix
     ]
 
+  def public_post_status_values,
+    do: [
+      :live,
+      :open,
+      :reproduced,
+      :pending_fix,
+      :pending_verification,
+      :closed_fixed,
+      :closed_wont_fix
+    ]
+
   def all_post_status_values,
     do: Enum.uniq(general_post_status_values() ++ bug_report_status_values())
 

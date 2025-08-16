@@ -569,6 +569,19 @@ defmodule Enkiro.AccountsTest do
     end
   end
 
+  describe "get_role_by_api_name!/1" do
+    test "returns the role with the given API name" do
+      role = role_fixture(name: "admin", api_name: "admin")
+      assert Accounts.get_role_by_api_name!("admin") == role
+    end
+
+    test "raises if the role does not exist" do
+      assert_raise Ecto.NoResultsError, fn ->
+        Accounts.get_role_by_api_name!("non_existent_role")
+      end
+    end
+  end
+
   describe "user_has_role?/2" do
     test "returns true if user has the role" do
       user = user_fixture()

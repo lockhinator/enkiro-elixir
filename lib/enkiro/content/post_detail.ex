@@ -5,6 +5,8 @@ defmodule Enkiro.Content.PostDetail do
   use Ecto.Schema
   import Ecto.Changeset
 
+  @derive Jason.Encoder
+
   @primary_key false
   embedded_schema do
     field :post_type, Ecto.Enum, values: Enkiro.Types.post_type_values()

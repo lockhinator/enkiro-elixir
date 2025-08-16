@@ -446,6 +446,8 @@ defmodule Enkiro.Accounts do
 
   def get_role_by_name!(name), do: Repo.get_by!(Role, name: name)
 
+  def get_role_by_api_name!(api_name), do: Repo.get_by!(Role, api_name: api_name)
+
   def user_has_role?(%User{} = user, required_roles) when is_list(required_roles) do
     Repo.exists?(
       from ur in UserRole,

@@ -11,6 +11,12 @@ defmodule Enkiro.Content.Post do
   alias Enkiro.Games.{Game, Patch}
   alias Enkiro.Content.PostDetail
 
+  @derive {
+    Flop.Schema,
+    filterable: [:title, :post_type, :status, :author_id, :game_patch_id, :game_id],
+    sortable: [:title, :inserted_at, :game_patch_id]
+  }
+
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
   schema "posts" do

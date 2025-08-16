@@ -41,6 +41,55 @@ defmodule Enkiro.ContentTest do
     %{user: user, game: game, patch: patch}
   end
 
+  describe "list_posts/1" do
+    test "returns all posts with preloaded associations", %{user: user} do
+      post_fixture(user)
+      assert {[post], _meta} = Content.list_posts()
+      assert post.author.id == user.id
+    end
+
+    test "returns posts with pagination", %{user: user} do
+      post1 = post_fixture(user, %{title: "Post 1"})
+      post2 = post_fixture(user, %{title: "Post 2"})
+
+      params = %{
+        page: 1,
+        page_size: 2
+      }
+
+      assert {[returned_post1, returned_post2], _meta} = Content.list_posts(params)
+      assert post1.id in [returned_post1.id, returned_post2.id]
+      assert post2.id in [returned_post1.id, returned_post2.id]
+    end
+  end
+
+  describe "list_public_posts/1" do
+    test "returns all posts with preloaded associations", %{user: user} do
+      post_fixture(user)
+      assert {[post], _meta} = Content.list_posts()
+      assert post.author.id == user.id
+    end
+
+    test "returns posts with pagination", %{user: user} do
+      {:ok, updated_user} =
+        user
+        |> Enkiro.Accounts.User.update_reputation_tier_changeset(%{reputation_tier: :reporter})
+        |> Repo.update()
+
+      post1 = post_fixture(updated_user, %{status: :live, title: "Post 1"})
+      post2 = post_fixture(user, %{title: "Post 2"})
+
+      params = %{
+        page: 1,
+        page_size: 2
+      }
+
+      assert {[returned_post1], _meta} = Content.list_public_posts(params)
+      assert post1.id == returned_post1.id
+      refute post2.id == returned_post1.id
+    end
+  end
+
   describe "create_post/2" do
     test "creates a player report and awards RP", %{user: user, game: game, patch: patch} do
       attrs =

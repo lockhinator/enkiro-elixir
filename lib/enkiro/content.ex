@@ -14,6 +14,36 @@ defmodule Enkiro.Content do
   alias Enkiro.Content.RpTransaction
   alias Enkiro.Content.ReputationService
 
+  def list_posts(params \\ %{}) do
+    query =
+      from(
+        post in Post,
+        join: author in assoc(post, :author),
+        join: game in assoc(post, :game),
+        join: patch in assoc(post, :game_patch),
+        preload: [author: author, game: game, game_patch: patch]
+      )
+
+    Flop.validate_and_run!(query, params, for: Post, replace_invalid_params: true)
+  end
+
+  def list_public_posts(params \\ %{}) do
+    valid_post_statuses =
+      Enkiro.Types.public_post_status_values()
+
+    query =
+      from(
+        post in Post,
+        join: author in assoc(post, :author),
+        join: game in assoc(post, :game),
+        join: patch in assoc(post, :game_patch),
+        where: post.status in ^valid_post_statuses,
+        preload: [author: author, game: game, game_patch: patch]
+      )
+
+    Flop.validate_and_run!(query, params, for: Post, replace_invalid_params: true)
+  end
+
   # =================================================================
   # Posts
   # =================================================================
