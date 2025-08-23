@@ -13,6 +13,7 @@ defmodule EnkiroWeb.Plugs.RoleBasedAccess do
   def call(conn, opts) do
     current_action = action_name(conn)
     actions = Keyword.get(opts, :actions, [])
+    reputation_tiers = Keyword.get(opts, :reputation_tiers, [])
 
     roles = Keyword.get(opts, :roles, [])
     # super admin role is always allowed
@@ -21,6 +22,9 @@ defmodule EnkiroWeb.Plugs.RoleBasedAccess do
       |> Enum.map(&to_string/1)
 
     user = Guardian.Plug.current_resource(conn)
+
+    has_required_role? = has_required_role?(user, roles)
+
     # If the user is authenticated, check if they have the required roles
     # If the user is not authenticated or does not have the required role, return an error
     cond do
@@ -30,7 +34,8 @@ defmodule EnkiroWeb.Plugs.RoleBasedAccess do
         |> json(%{error: "Unauthorized"})
         |> halt()
 
-      current_action in actions and not has_required_role?(user, roles) ->
+      current_action in actions and not Enum.member?(reputation_tiers, user.reputation_tier) and
+          not has_required_role? ->
         conn
         |> put_status(:forbidden)
         |> json(%{error: "Forbidden"})

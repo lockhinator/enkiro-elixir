@@ -22,6 +22,16 @@ defmodule Enkiro.AccountsFixtures do
       |> valid_user_attributes()
       |> Enkiro.Accounts.register_user()
 
+    if is_map(attrs) && Map.get(attrs, :role, nil) do
+      role = Enkiro.Accounts.get_role_by_api_name!("#{attrs.role}")
+      user_role_fixture(user, role)
+    end
+
+    if is_list(attrs) && Keyword.get(attrs, :role, nil) do
+      role = Enkiro.Accounts.get_role_by_api_name!("#{Keyword.get(attrs, :role)}")
+      user_role_fixture(user, role)
+    end
+
     user
   end
 

@@ -80,6 +80,8 @@ defmodule EnkiroWeb.Router do
     get "/games/slug/:slug", GamesController, :show
     get "/games/:id", GamesController, :show
 
+    get "/content/posts", ContentController, :public_index
+
     # --- Special Refresh Route ---
     # This route uses its own specific pipeline
     scope "/" do
@@ -105,6 +107,11 @@ defmodule EnkiroWeb.Router do
       post "/games", GamesController, :create
       put "/games/:id", GamesController, :update
       delete "/games/:id", GamesController, :delete
+
+      get "/content/admin-posts", ContentController, :admin_index
+      post "/content/posts", ContentController, :create
+      put "/content/posts/:id", ContentController, :update
+      delete "/content/posts/:id", ContentController, :delete
     end
   end
 end

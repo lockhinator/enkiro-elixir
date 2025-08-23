@@ -1,0 +1,414 @@
+defmodule Enkiro.ContentTest do
+  use Enkiro.DataCase, async: true
+
+  import Enkiro.ContentFixtures
+  import Enkiro.AccountsFixtures
+
+  alias Enkiro.Content
+  alias Enkiro.Content.Post
+  alias Enkiro.Content.RpTransaction
+  alias Enkiro.Accounts
+
+  @player_report_attrs %{
+    post_type: :player_report,
+    title: "My thoughts on the new patch",
+    details: %{
+      ratings: %{"gameplay_loop" => 5, "performance" => 4},
+      hours_played: "100-500"
+    }
+  }
+
+  @publication_attrs %{
+    post_type: :publication,
+    title: "A new article on game design",
+    details: %{
+      publication_type: :article,
+      body_markdown: "This is a great article about game design."
+    }
+  }
+
+  @bug_report_attrs %{
+    post_type: :bug_report,
+    title: "Falling through the floor on Customs",
+    details: %{
+      replication_steps: "1. Go to dorms..."
+    }
+  }
+
+  setup do
+    user = user_fixture()
+    game = Enkiro.GamesFixtures.game_fixture()
+    patch = Enkiro.GamesFixtures.patch_fixture(game)
+    %{user: user, game: game, patch: patch}
+  end
+
+  describe "list_posts/1" do
+    test "returns all posts with preloaded associations", %{user: user} do
+      post_fixture(user)
+      deleted_post = post_fixture(user, %{status: :deleted})
+      assert deleted_post.status == :deleted
+
+      assert {[post], _meta} = Content.list_posts()
+      assert post.author.id == user.id
+      assert post.status != :deleted
+    end
+
+    test "returns posts with pagination", %{user: user} do
+      post1 = post_fixture(user, %{title: "Post 1"})
+      post2 = post_fixture(user, %{title: "Post 2"})
+      deleted_post = post_fixture(user, %{status: :deleted})
+      assert deleted_post.status == :deleted
+
+      params = %{
+        page: 1,
+        page_size: 2
+      }
+
+      assert {[returned_post1, returned_post2], _meta} = Content.list_posts(params)
+      assert post1.id in [returned_post1.id, returned_post2.id]
+      assert post2.id in [returned_post1.id, returned_post2.id]
+      assert deleted_post.id not in [returned_post1.id, returned_post2.id]
+    end
+  end
+
+  describe "list_public_posts/1" do
+    test "returns all posts with preloaded associations", %{user: user} do
+      post_fixture(user)
+      deleted_post = post_fixture(user, %{status: :deleted})
+      assert deleted_post.status == :deleted
+
+      assert {[post], _meta} = Content.list_posts()
+      assert post.author.id == user.id
+      assert post.status != :deleted
+    end
+
+    test "returns posts with pagination", %{user: user} do
+      {:ok, updated_user} =
+        user
+        |> Enkiro.Accounts.User.update_reputation_tier_changeset(%{reputation_tier: :reporter})
+        |> Repo.update()
+
+      post1 = post_fixture(updated_user, %{status: :live, title: "Post 1"})
+      post2 = post_fixture(user, %{title: "Post 2"})
+      deleted_post = post_fixture(user, %{status: :deleted})
+
+      params = %{
+        page: 1,
+        page_size: 2
+      }
+
+      assert {[returned_post1], _meta} = Content.list_public_posts(params)
+      assert post1.id == returned_post1.id
+      refute post2.id == returned_post1.id
+      assert deleted_post.id not in [returned_post1.id]
+    end
+  end
+
+  describe "get_post!/1" do
+    test "returns the post with given id", %{user: user} do
+      post = post_fixture(user)
+      assert Content.get_post!(post.id).id == post.id
+    end
+
+    test "returns the post within given id and preloads", %{user: user} do
+      deleted_post = post_fixture(user, %{status: :deleted})
+      assert %Post{} = post = Content.get_post!(deleted_post.id, [:author])
+      assert post.status == :deleted
+      assert post.author.id == user.id
+    end
+  end
+
+  describe "create_post/2" do
+    test "creates a player report and awards RP", %{user: user, game: game, patch: patch} do
+      attrs =
+        Map.merge(@player_report_attrs, %{
+          game_id: game.id,
+          game_patch_id: patch.id
+        })
+
+      assert {:ok, %Post{} = post} = Content.create_post(user, attrs)
+      assert post.title == "My thoughts on the new patch"
+      assert post.author_id == user.id
+      assert post.post_type == :player_report
+
+      assert post.details.ratings["gameplay_loop"] == 5
+
+      # Verify RP was awarded
+      assert %RpTransaction{amount: 0, event_type: :submit_player_report} =
+               Repo.get_by(RpTransaction, user_id: user.id)
+
+      updated_user = Accounts.get_user!(user.id)
+      assert updated_user.all_time_rp == 0
+
+      # Verify PaperTrail version was created
+      version = PaperTrail.get_version(post)
+      assert version.originator_id == user.id
+    end
+
+    test "creates a publication with a default status of :pending_review", %{
+      user: user,
+      game: game,
+      patch: patch
+    } do
+      attrs =
+        Map.merge(@publication_attrs, %{
+          game_id: game.id,
+          game_patch_id: patch.id
+        })
+
+      assert {:ok, %Post{} = post} = Content.create_post(user, attrs)
+      assert post.status == :pending_review
+
+      # Verify RP was awarded
+      assert %RpTransaction{amount: 0, event_type: :submit_publication} =
+               Repo.get_by(RpTransaction, user_id: user.id)
+
+      updated_user = Accounts.get_user!(user.id)
+      assert updated_user.all_time_rp == 0
+
+      # Verify PaperTrail version was created
+      version = PaperTrail.get_version(post)
+      assert version.originator_id == user.id
+    end
+
+    test "creates a bug report with a default status of :open", %{
+      user: user,
+      game: game,
+      patch: patch
+    } do
+      attrs =
+        Map.merge(@bug_report_attrs, %{
+          game_id: game.id,
+          game_patch_id: patch.id
+        })
+
+      assert {:ok, %Post{} = post} = Content.create_post(user, attrs)
+      assert post.status == :open
+
+      # Verify RP was awarded
+      assert %RpTransaction{amount: 0, event_type: :submit_bug_report} =
+               Repo.get_by(RpTransaction, user_id: user.id)
+
+      updated_user = Accounts.get_user!(user.id)
+      assert updated_user.all_time_rp == 0
+
+      # Verify PaperTrail version was created
+      version = PaperTrail.get_version(post)
+      assert version.originator_id == user.id
+    end
+
+    test "creates a post with status :pending_review for an untrusted user", %{
+      game: game,
+      patch: patch
+    } do
+      # Fixture for a new user who is still an :observer
+      {:ok, untrusted_user} = Accounts.register_user(valid_user_attributes())
+
+      attrs =
+        Map.merge(@player_report_attrs, %{
+          game_id: game.id,
+          game_patch_id: patch.id
+        })
+
+      assert {:ok, %Post{} = post} = Content.create_post(untrusted_user, attrs)
+      assert post.status == :pending_review
+    end
+
+    test "creates a post and sets status as :live for a trusted user", %{
+      user: user,
+      game: game,
+      patch: patch
+    } do
+      {:ok, trusted_user} =
+        user
+        |> Enkiro.Accounts.User.update_reputation_tier_changeset(%{reputation_tier: :reporter})
+        |> Repo.update()
+
+      attrs =
+        Map.merge(@player_report_attrs, %{
+          game_id: game.id,
+          game_patch_id: patch.id,
+          status: :live
+        })
+
+      assert {:ok, %Post{} = post} = Content.create_post(trusted_user, attrs)
+      assert post.status == :live
+    end
+
+    test "returns an error changeset for invalid data", %{user: user} do
+      # Missing title and details
+      attrs = %{post_type: :player_report}
+      assert {:error, %Ecto.Changeset{}} = Content.create_post(user, attrs)
+    end
+  end
+
+  describe "update_post/3" do
+    test "updates a post's attributes", %{user: user} do
+      post = post_fixture(user)
+      update_attrs = %{title: "An updated title"}
+
+      assert {:ok, %Post{} = updated_post} = Content.update_post(post, user, update_attrs)
+      assert updated_post.title == "An updated title"
+
+      version = PaperTrail.get_version(updated_post)
+      assert version.event == "update"
+      assert version.item_changes["title"] == "An updated title"
+    end
+
+    test "returns an error changeset for invalid data", %{user: user} do
+      post = post_fixture(user)
+      # Invalid title
+      update_attrs = %{title: nil}
+
+      assert {:error, %Ecto.Changeset{}} = Content.update_post(post, user, update_attrs)
+    end
+
+    test "authorized user can update :player_report from pending to approved status and awards the author rp" do
+      author = user_fixture()
+
+      admin = user_fixture()
+      role = Accounts.get_role_by_name!("Super Admin")
+      user_role_fixture(admin, role)
+
+      post = post_fixture(author, @player_report_attrs)
+
+      assert post.status == :pending_review
+
+      assert {:ok, %Post{} = updated_post} =
+               Content.update_post(post, admin, %{status: :live})
+
+      assert updated_post.author_id == author.id
+      refute updated_post.author_id == admin.id
+      assert updated_post.status == :live
+
+      assert %RpTransaction{amount: 0, event_type: :submit_player_report} =
+               Repo.get_by(RpTransaction, user_id: author.id, event_type: :submit_player_report)
+
+      updated_author = Accounts.get_user!(author.id)
+      assert updated_author.all_time_rp == 10
+    end
+
+    test "authorized user can update :publication from pending to approved status and awards the author rp" do
+      author = user_fixture()
+
+      admin = user_fixture()
+      role = Accounts.get_role_by_name!("Super Admin")
+      user_role_fixture(admin, role)
+
+      post = post_fixture(author, @publication_attrs)
+
+      assert post.status == :pending_review
+
+      assert {:ok, %Post{} = updated_post} =
+               Content.update_post(post, admin, %{status: :live})
+
+      assert updated_post.author_id == author.id
+      refute updated_post.author_id == admin.id
+      assert updated_post.status == :live
+
+      assert %RpTransaction{amount: 0, event_type: :submit_publication} =
+               Repo.get_by(RpTransaction, user_id: author.id, event_type: :submit_publication)
+
+      updated_author = Accounts.get_user!(author.id)
+      assert updated_author.all_time_rp == 15
+    end
+
+    test "authorized user can update :bug_report from open to reproduced status and awards the author rp" do
+      author = user_fixture()
+
+      admin = user_fixture()
+      role = Accounts.get_role_by_name!("Super Admin")
+      user_role_fixture(admin, role)
+
+      post = post_fixture(author, @bug_report_attrs)
+
+      assert post.status == :open
+
+      assert {:ok, %Post{} = updated_post} =
+               Content.update_post(post, admin, %{status: :reproduced})
+
+      assert updated_post.author_id == author.id
+      refute updated_post.author_id == admin.id
+      assert updated_post.status == :reproduced
+
+      assert %RpTransaction{amount: 0, event_type: :submit_bug_report} =
+               Repo.get_by(RpTransaction, user_id: author.id, event_type: :submit_bug_report)
+
+      updated_author = Accounts.get_user!(author.id)
+      assert updated_author.all_time_rp == 10
+    end
+
+    test "updates the post's status based on post type and user trust level", %{user: user} do
+      post = post_fixture(user, @player_report_attrs)
+      assert post.status == :pending_review
+
+      {:ok, updated_user} =
+        user
+        |> Enkiro.Accounts.User.update_reputation_tier_changeset(%{reputation_tier: :reporter})
+        |> Repo.update()
+
+      assert updated_user.reputation_tier == :reporter
+
+      # Simulate a trusted user
+      update_attrs = %{status: :live}
+
+      assert {:ok, %Post{} = updated_post} = Content.update_post(post, updated_user, update_attrs)
+      assert updated_post.status == :live
+    end
+
+    test "player_report does not change author of post when updating the post status as admin (if admin updates post author is unchanged)",
+         %{user: user} do
+      post = post_fixture(user, @player_report_attrs)
+      assert post.status == :pending_review
+
+      admin = user_fixture()
+      role = Accounts.get_role_by_name!("Super Admin")
+      user_role_fixture(admin, role)
+
+      assert {:ok, %Post{} = updated_post} = Content.update_post(post, admin, %{status: :live})
+      assert updated_post.status == :live
+      # Author should remain unchanged
+      assert updated_post.author_id == user.id
+    end
+
+    test "bug_report does not change author of post when updating the post status as admin (if admin updates post author is unchanged)",
+         %{user: user} do
+      post = post_fixture(user, @bug_report_attrs)
+      assert post.status == :open
+
+      admin = user_fixture()
+      role = Accounts.get_role_by_name!("Super Admin")
+      user_role_fixture(admin, role)
+
+      assert {:ok, %Post{} = updated_post} =
+               Content.update_post(post, admin, %{status: :pending_fix})
+
+      assert updated_post.status == :pending_fix
+      # Author should remain unchanged
+      assert updated_post.author_id == user.id
+    end
+
+    test "publication does not change author of post when updating the post status as admin (if admin updates post author is unchanged)",
+         %{user: user} do
+      post = post_fixture(user, @publication_attrs)
+      assert post.status == :pending_review
+
+      admin = user_fixture()
+      role = Accounts.get_role_by_name!("Super Admin")
+      user_role_fixture(admin, role)
+
+      assert {:ok, %Post{} = updated_post} = Content.update_post(post, admin, %{status: :live})
+      assert updated_post.status == :live
+      # Author should remain unchanged
+      assert updated_post.author_id == user.id
+    end
+  end
+
+  describe "delete_post/2" do
+    test "soft-deletes a post by changing its status", %{user: user} do
+      post = post_fixture(user)
+      assert {:ok, %Post{} = deleted_post} = Content.delete_post(post, user)
+      assert deleted_post.status == :deleted
+    end
+  end
+end

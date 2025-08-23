@@ -8,6 +8,8 @@ defmodule Enkiro.Accounts do
 
   alias Enkiro.Accounts.{User, UserToken, UserNotifier}
 
+  def super_admin_role, do: "super_admin"
+
   ## Database getters
 
   @doc """
@@ -446,7 +448,11 @@ defmodule Enkiro.Accounts do
 
   def get_role_by_name!(name), do: Repo.get_by!(Role, name: name)
 
+  def get_role_by_api_name!(api_name), do: Repo.get_by!(Role, api_name: api_name)
+
   def user_has_role?(%User{} = user, required_roles) when is_list(required_roles) do
+    required_roles = Enum.map(required_roles, &to_string/1)
+
     Repo.exists?(
       from ur in UserRole,
         join: r in Role,
