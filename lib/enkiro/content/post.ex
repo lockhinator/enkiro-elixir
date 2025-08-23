@@ -46,7 +46,12 @@ defmodule Enkiro.Content.Post do
     |> validate_and_default_status(author)
     |> cast_embed(:details,
       with: fn detail, details_attrs ->
-        details_attrs = Map.put(details_attrs, :post_type, post_type)
+        details_attrs =
+          details_attrs
+          |> Map.put(:post_type, post_type)
+          |> Jason.encode!()
+          |> Jason.decode!()
+
         PostDetail.changeset(detail, details_attrs)
       end
     )
@@ -87,6 +92,9 @@ defmodule Enkiro.Content.Post do
           # only trusted users and staff can change the status of a publication
           # if is the creating trusted user or is staff then allow them to change the status
           player_report_valid_statuses(changeset, author)
+
+        _ ->
+          []
       end
 
     # if the user is a trusted user and they are setting the status of a post allow it
@@ -96,6 +104,7 @@ defmodule Enkiro.Content.Post do
       default_status_atom =
         case {post_type, is_trusted} do
           {:bug_report, _} -> :open
+          {_, true} -> :live
           {_, false} -> :pending_review
         end
 

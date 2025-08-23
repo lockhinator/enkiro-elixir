@@ -6,13 +6,14 @@ defmodule Enkiro.ContentFixtures do
 
   alias Enkiro.Accounts.User
   alias Enkiro.Content
+  alias Enkiro.GamesFixtures
 
   @doc """
   Generate a post.
   """
   def post_fixture(%User{} = author, attrs \\ %{}) do
-    game = Enkiro.GamesFixtures.game_fixture()
-    patch = Enkiro.GamesFixtures.patch_fixture(game)
+    game = GamesFixtures.game_fixture()
+    patch = GamesFixtures.patch_fixture(game)
 
     default_attrs = %{
       game_id: game.id,
@@ -27,8 +28,18 @@ defmodule Enkiro.ContentFixtures do
 
     attrs = Enum.into(attrs, default_attrs)
 
-    {:ok, post} = Content.create_post(author, attrs)
+    status = Map.get(attrs, :status)
 
-    post
+    # some hackery to set a post to deleted status
+    # since posts can't be created with deleted status
+    if not is_nil(status) and status == :deleted do
+      attrs = Map.delete(attrs, :status)
+      {:ok, post} = Content.create_post(author, attrs)
+      {:ok, post} = Content.delete_post(post, author)
+      post
+    else
+      {:ok, post} = Content.create_post(author, attrs)
+      post
+    end
   end
 end

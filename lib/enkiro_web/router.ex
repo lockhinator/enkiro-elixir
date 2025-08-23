@@ -109,6 +109,9 @@ defmodule EnkiroWeb.Router do
       delete "/games/:id", GamesController, :delete
 
       get "/content/admin-posts", ContentController, :admin_index
+      post "/content/posts", ContentController, :create
+      put "/content/posts/:id", ContentController, :update
+      delete "/content/posts/:id", ContentController, :delete
     end
   end
 end

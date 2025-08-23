@@ -8,10 +8,14 @@ defmodule Enkiro.Content.ReputationService do
   @doc """
   Calculates the RP amount for a given event type.
   """
-  def calculate_amount(:submit_player_report), do: 10
-  def calculate_amount(:submit_bug_report), do: 20
-  def calculate_amount(:submit_publication), do: 15
+  def calculate_amount(:submit_player_report), do: 0
+  def calculate_amount(:submit_bug_report), do: 0
+  def calculate_amount(:submit_publication), do: 0
+  def calculate_amount(:approved_player_report), do: 10
+  def calculate_amount(:approved_publication), do: 15
   def calculate_amount(:receive_insightful_vote), do: 5
+  # bug reports are not approved they are opened and then :reproduced
+  # we shuold only award RP when they are reproduced
   def calculate_amount(:bug_report_reproduced), do: 10
   def calculate_amount(:verify_bug_report), do: 10
   def calculate_amount(:publication_upvoted), do: 2

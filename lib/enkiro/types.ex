@@ -55,6 +55,9 @@ defmodule Enkiro.Types do
       :community_pillar
     ]
 
+  def user_reputation_approve_post_values,
+    do: user_reputation_tier_values() -- [:observer, :contributor]
+
   def user_subscription_tier_values, do: [:free, :analyst, :veteran]
 
   def rp_event_type_values,
@@ -63,6 +66,8 @@ defmodule Enkiro.Types do
       :submit_player_report,
       :submit_bug_report,
       :submit_publication,
+      :approved_player_report,
+      :approved_publication,
       :receive_insightful_vote,
       # When your bug is reproduced by others
       :bug_report_reproduced,
@@ -88,4 +93,8 @@ defmodule Enkiro.Types do
       :achievement,
       :referral
     ]
+
+  def admin_roles, do: [:super_admin, :admin]
+
+  def approve_post_roles, do: admin_roles() ++ [:moderator]
 end

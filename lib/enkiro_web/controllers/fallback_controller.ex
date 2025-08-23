@@ -8,6 +8,13 @@ defmodule EnkiroWeb.FallbackController do
     |> render("error.json", %{error: :unauthorized})
   end
 
+  def call(%Plug.Conn{} = conn, {:can_edit, false}) do
+    conn
+    |> put_status(:unauthorized)
+    |> put_view(EnkiroWeb.FallbackControllerJSON)
+    |> render("error.json", %{error: :unauthorized})
+  end
+
   def call(%Plug.Conn{} = conn, {:error, %Ecto.Changeset{} = changeset}) do
     conn
     |> put_status(:unprocessable_entity)

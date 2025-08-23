@@ -7,6 +7,8 @@ defmodule Enkiro.Repo.Migrations.CreateRpTransactions do
       "submit_player_report",
       "submit_bug_report",
       "submit_publication",
+      "approved_player_report",
+      "approved_publication",
       "receive_insightful_vote",
       "bug_report_reproduced",
       "verify_bug_report",
@@ -42,5 +44,9 @@ defmodule Enkiro.Repo.Migrations.CreateRpTransactions do
 
     create index(:rp_transactions, [:user_id])
     create index(:rp_transactions, [:game_id])
+
+    create unique_index(:rp_transactions, [:source_id, :source_type, :user_id, :event_type],
+             name: :unique_rp_transaction_per_source
+           )
   end
 end
